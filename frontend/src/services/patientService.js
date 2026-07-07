@@ -42,7 +42,7 @@ const patientService = {
   },
 
   addVisitNote: async (id, noteData) => {
-    const response = await api.post(`/patients/${id}/visit-notes`, noteData)
+    const response = await api.post(`/patients/${id}/visit`, noteData)
     return response.data
   },
 }

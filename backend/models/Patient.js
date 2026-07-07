@@ -146,7 +146,7 @@ const PatientSchema = new mongoose.Schema(
 );
 
 // ─── Indexes ──────────────────────────────────────────────────────────────────
-PatientSchema.index({ patientId: 1 });
+// patientId has unique: true in schema, so no separate index needed
 PatientSchema.index({ healthCenter: 1 });
 PatientSchema.index({ registeredBy: 1 });
 PatientSchema.index({ gender: 1 });

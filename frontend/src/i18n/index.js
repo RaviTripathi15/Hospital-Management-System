@@ -4,6 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 
 import en from './locales/en.json'
 import hi from './locales/hi.json'
+import mr from './locales/mr.json'
 import ta from './locales/ta.json'
 
 i18n
@@ -13,6 +14,7 @@ i18n
     resources: {
       en: { translation: en },
       hi: { translation: hi },
+      mr: { translation: mr },
       ta: { translation: ta },
     },
     fallbackLng: 'en',

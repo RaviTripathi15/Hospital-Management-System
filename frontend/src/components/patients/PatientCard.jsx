@@ -6,8 +6,9 @@ import Badge from '@/components/ui/Badge'
 import { cn } from '@/utils/cn'
 
 export default function PatientCard({ patient, onClick }) {
-  const name = `${patient.firstName} ${patient.lastName}`
-  const age = formatAge(patient.dateOfBirth)
+  const name = patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unnamed Patient'
+  const age = patient.dob ? formatAge(patient.dob) : patient.age
+  const contact = patient.phone || patient.contact
 
   return (
     <div
@@ -26,13 +27,13 @@ export default function PatientCard({ patient, onClick }) {
             </Badge>
           </div>
           <div className="mt-1.5 space-y-1">
-            {patient.contact && (
+            {contact && (
               <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                 <Phone className="w-3 h-3" />
-                {patient.contact}
+                {contact}
               </div>
             )}
-            {patient.dateOfBirth && (
+            {age !== undefined && age !== null && (
               <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                 <Calendar className="w-3 h-3" />
                 Age: {age} years

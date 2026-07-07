@@ -2,8 +2,24 @@
 
 const PredictionService = require('../services/predictionService');
 const { validationResult } = require('express-validator');
-const { successResponse, errorResponse } = require('../utils/apiResponse');
+const { success, error } = require('../utils/apiResponse');
 const logger = require('../config/logger');
+const { ROLES } = require('../config/constants');
+
+const getTargetHealthCenterId = async (req) => {
+  let healthCenterId = req.query.healthCenter || req.body.healthCenter || (req.user.healthCenter ? req.user.healthCenter.toString() : null);
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
+    healthCenterId = req.user.healthCenter.toString();
+  }
+  if (!healthCenterId && [ROLES.SUPER_ADMIN, ROLES.DISTRICT_ADMIN].includes(req.user.role)) {
+    const HealthCenter = require('../models/HealthCenter');
+    const firstCenter = await HealthCenter.findOne({ isActive: true });
+    if (firstCenter) {
+      healthCenterId = firstCenter._id.toString();
+    }
+  }
+  return healthCenterId;
+};
 
 class PredictionController {
   /**
@@ -14,12 +30,16 @@ class PredictionController {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return errorResponse(res, 'Validation failed', 400, errors.array());
+        return res.status(400).json(error('Validation failed', 400, errors.array()));
       }
 
       const { itemId } = req.params;
-      const { healthCenterId } = req.user;
+      const healthCenterId = await getTargetHealthCenterId(req);
       const { daysAhead = 30 } = req.query;
+
+      if (!healthCenterId) {
+        return res.status(400).json(error('User is not associated with a health center', 400));
+      }
 
       const prediction = await PredictionService.predictMedicineDemand(
         healthCenterId,
@@ -29,10 +49,10 @@ class PredictionController {
 
       logger.info(`Medicine demand prediction generated for item: ${itemId}`);
 
-      return successResponse(res, prediction, 'Medicine demand prediction generated successfully');
-    } catch (error) {
-      logger.error(`Medicine demand prediction error: ${error.message}`);
-      return errorResponse(res, error.message, 500);
+      return res.status(200).json(success(prediction, 'Medicine demand prediction generated successfully'));
+    } catch (err) {
+      logger.error(`Medicine demand prediction error: ${err.message}`);
+      return res.status(500).json(error(err.message, 500));
     }
   }
 
@@ -42,8 +62,12 @@ class PredictionController {
    */
   static async getStockOutWarnings(req, res) {
     try {
-      const { healthCenterId } = req.user;
+      const healthCenterId = await getTargetHealthCenterId(req);
       const { thresholdDays = 7 } = req.query;
+
+      if (!healthCenterId) {
+        return res.status(400).json(error('User is not associated with a health center', 400));
+      }
 
       const warnings = await PredictionService.predictStockOut(
         healthCenterId,
@@ -54,18 +78,19 @@ class PredictionController {
         `Stock-out warnings retrieved for health center: ${healthCenterId}. Found ${warnings.length} warnings.`
       );
 
-      return successResponse(
-        res,
-        {
-          totalWarnings: warnings.length,
-          warnings,
-          generatedAt: new Date(),
-        },
-        'Stock-out warnings retrieved successfully'
+      return res.status(200).json(
+        success(
+          {
+            totalWarnings: warnings.length,
+            warnings,
+            generatedAt: new Date(),
+          },
+          'Stock-out warnings retrieved successfully'
+        )
       );
-    } catch (error) {
-      logger.error(`Stock-out warning retrieval error: ${error.message}`);
-      return errorResponse(res, error.message, 500);
+    } catch (err) {
+      logger.error(`Stock-out warning retrieval error: ${err.message}`);
+      return res.status(500).json(error(err.message, 500));
     }
   }
 
@@ -75,8 +100,12 @@ class PredictionController {
    */
   static async getPatientFootfallPrediction(req, res) {
     try {
-      const { healthCenterId } = req.user;
+      const healthCenterId = await getTargetHealthCenterId(req);
       const { daysAhead = 30, department } = req.query;
+
+      if (!healthCenterId) {
+        return res.status(400).json(error('User is not associated with a health center', 400));
+      }
 
       const prediction = await PredictionService.predictPatientFootfall(
         healthCenterId,
@@ -88,14 +117,15 @@ class PredictionController {
         `Patient footfall prediction generated for health center: ${healthCenterId}`
       );
 
-      return successResponse(
-        res,
-        prediction,
-        'Patient footfall prediction generated successfully'
+      return res.status(200).json(
+        success(
+          prediction,
+          'Patient footfall prediction generated successfully'
+        )
       );
-    } catch (error) {
-      logger.error(`Patient footfall prediction error: ${error.message}`);
-      return errorResponse(res, error.message, 500);
+    } catch (err) {
+      logger.error(`Patient footfall prediction error: ${err.message}`);
+      return res.status(500).json(error(err.message, 500));
     }
   }
 
@@ -105,8 +135,12 @@ class PredictionController {
    */
   static async getDoctorRequirementPrediction(req, res) {
     try {
-      const { healthCenterId } = req.user;
+      const healthCenterId = await getTargetHealthCenterId(req);
       const { daysAhead = 30, department } = req.query;
+
+      if (!healthCenterId) {
+        return res.status(400).json(error('User is not associated with a health center', 400));
+      }
 
       const prediction = await PredictionService.predictDoctorRequirement(
         healthCenterId,
@@ -118,14 +152,15 @@ class PredictionController {
         `Doctor requirement prediction generated for health center: ${healthCenterId}`
       );
 
-      return successResponse(
-        res,
-        prediction,
-        'Doctor requirement prediction generated successfully'
+      return res.status(200).json(
+        success(
+          prediction,
+          'Doctor requirement prediction generated successfully'
+        )
       );
-    } catch (error) {
-      logger.error(`Doctor requirement prediction error: ${error.message}`);
-      return errorResponse(res, error.message, 500);
+    } catch (err) {
+      logger.error(`Doctor requirement prediction error: ${err.message}`);
+      return res.status(500).json(error(err.message, 500));
     }
   }
 
@@ -135,8 +170,12 @@ class PredictionController {
    */
   static async getBedRequirementPrediction(req, res) {
     try {
-      const { healthCenterId } = req.user;
+      const healthCenterId = await getTargetHealthCenterId(req);
       const { daysAhead = 30 } = req.query;
+
+      if (!healthCenterId) {
+        return res.status(400).json(error('User is not associated with a health center', 400));
+      }
 
       const prediction = await PredictionService.predictBedRequirement(
         healthCenterId,
@@ -145,14 +184,15 @@ class PredictionController {
 
       logger.info(`Bed requirement prediction generated for health center: ${healthCenterId}`);
 
-      return successResponse(
-        res,
-        prediction,
-        'Bed requirement prediction generated successfully'
+      return res.status(200).json(
+        success(
+          prediction,
+          'Bed requirement prediction generated successfully'
+        )
       );
-    } catch (error) {
-      logger.error(`Bed requirement prediction error: ${error.message}`);
-      return errorResponse(res, error.message, 500);
+    } catch (err) {
+      logger.error(`Bed requirement prediction error: ${err.message}`);
+      return res.status(500).json(error(err.message, 500));
     }
   }
 
@@ -162,8 +202,12 @@ class PredictionController {
    */
   static async getDashboardPredictions(req, res) {
     try {
-      const { healthCenterId } = req.user;
+      const healthCenterId = await getTargetHealthCenterId(req);
       const { daysAhead = 30 } = req.query;
+
+      if (!healthCenterId) {
+        return res.status(400).json(error('User is not associated with a health center', 400));
+      }
 
       const [footfallPrediction, doctorPrediction, bedPrediction, stockOutWarnings] =
         await Promise.all([
@@ -175,25 +219,26 @@ class PredictionController {
 
       logger.info(`Dashboard predictions generated for health center: ${healthCenterId}`);
 
-      return successResponse(
-        res,
-        {
-          generatedAt: new Date(),
-          predictions: {
-            footfall: footfallPrediction,
-            doctorRequirement: doctorPrediction,
-            bedRequirement: bedPrediction,
-            stockOutWarnings: {
-              count: stockOutWarnings.length,
-              items: stockOutWarnings,
+      return res.status(200).json(
+        success(
+          {
+            generatedAt: new Date(),
+            predictions: {
+              footfall: footfallPrediction,
+              doctorRequirement: doctorPrediction,
+              bedRequirement: bedPrediction,
+              stockOutWarnings: {
+                count: stockOutWarnings.length,
+                items: stockOutWarnings,
+              },
             },
           },
-        },
-        'Dashboard predictions retrieved successfully'
+          'Dashboard predictions retrieved successfully'
+        )
       );
-    } catch (error) {
-      logger.error(`Dashboard predictions error: ${error.message}`);
-      return errorResponse(res, error.message, 500);
+    } catch (err) {
+      logger.error(`Dashboard predictions error: ${err.message}`);
+      return res.status(500).json(error(err.message, 500));
     }
   }
 
@@ -205,11 +250,15 @@ class PredictionController {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return errorResponse(res, 'Validation failed', 400, errors.array());
+        return res.status(400).json(error('Validation failed', 400, errors.array()));
       }
 
-      const { healthCenterId } = req.user;
+      const healthCenterId = await getTargetHealthCenterId(req);
       const { itemIds = [], daysAhead = 30 } = req.body;
+
+      if (!healthCenterId) {
+        return res.status(400).json(error('User is not associated with a health center', 400));
+      }
 
       const predictions = await Promise.all(
         itemIds.map((itemId) =>
@@ -221,18 +270,19 @@ class PredictionController {
         `Batch medicine demand predictions generated for ${itemIds.length} items in health center: ${healthCenterId}`
       );
 
-      return successResponse(
-        res,
-        {
-          totalItems: itemIds.length,
-          predictions,
-          generatedAt: new Date(),
-        },
-        'Batch medicine demand predictions generated successfully'
+      return res.status(200).json(
+        success(
+          {
+            totalItems: itemIds.length,
+            predictions,
+            generatedAt: new Date(),
+          },
+          'Batch medicine demand predictions generated successfully'
+        )
       );
-    } catch (error) {
-      logger.error(`Batch medicine prediction error: ${error.message}`);
-      return errorResponse(res, error.message, 500);
+    } catch (err) {
+      logger.error(`Batch medicine prediction error: ${err.message}`);
+      return res.status(500).json(error(err.message, 500));
     }
   }
 
@@ -242,7 +292,11 @@ class PredictionController {
    */
   static async getRiskAssessment(req, res) {
     try {
-      const { healthCenterId } = req.user;
+      const healthCenterId = await getTargetHealthCenterId(req);
+
+      if (!healthCenterId) {
+        return res.status(400).json(error('User is not associated with a health center', 400));
+      }
 
       const [stockOutWarnings, bedPrediction, doctorPrediction] = await Promise.all([
         PredictionService.predictStockOut(healthCenterId, 7),
@@ -286,20 +340,21 @@ class PredictionController {
         `Risk assessment generated for health center: ${healthCenterId}. Overall risk score: ${overallRiskScore}`
       );
 
-      return successResponse(
-        res,
-        {
-          overallRiskScore,
-          riskLevel:
-            overallRiskScore > 70 ? 'Critical' : overallRiskScore > 50 ? 'High' : 'Moderate',
-          criticalIssues,
-          lastAssessment: new Date(),
-        },
-        'Risk assessment retrieved successfully'
+      return res.status(200).json(
+        success(
+          {
+            overallRiskScore,
+            riskLevel:
+              overallRiskScore > 70 ? 'Critical' : overallRiskScore > 50 ? 'High' : 'Moderate',
+            criticalIssues,
+            lastAssessment: new Date(),
+          },
+          'Risk assessment retrieved successfully'
+        )
       );
-    } catch (error) {
-      logger.error(`Risk assessment error: ${error.message}`);
-      return errorResponse(res, error.message, 500);
+    } catch (err) {
+      logger.error(`Risk assessment error: ${err.message}`);
+      return res.status(500).json(error(err.message, 500));
     }
   }
 }

@@ -80,8 +80,9 @@ export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 export const INVENTORY_CATEGORIES = [
   { value: 'medicine', label: 'Medicines' },
   { value: 'equipment', label: 'Equipment' },
-  { value: 'supply', label: 'Supplies' },
+  { value: 'consumable', label: 'Consumables' },
   { value: 'vaccine', label: 'Vaccines' },
+  { value: 'reagent', label: 'Reagents' },
 ]
 
 export const CENTER_TYPES = [
@@ -106,6 +107,7 @@ export const REPORT_PERIODS = [
 export const LANGUAGES = [
   { code: 'en', label: 'English', nativeLabel: 'English' },
   { code: 'hi', label: 'Hindi', nativeLabel: 'हिंदी' },
+  { code: 'mr', label: 'Marathi', nativeLabel: 'मराठी' },
   { code: 'ta', label: 'Tamil', nativeLabel: 'தமிழ்' },
 ]
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, TrendingUp, TrendingDown, Users, Pill, Bed, Activity } from 'lucide-react';
-import { api } from '../services/api';
+import api from '@/services/api';
 
 const PredictionDashboard = () => {
   const [predictions, setPredictions] = useState(null);

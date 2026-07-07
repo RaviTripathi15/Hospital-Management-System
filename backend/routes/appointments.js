@@ -18,14 +18,14 @@ router.get('/today', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUP
 router.get('/center/:centerId', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), paginationValidator, getAppointmentsByCenter);
 router.get('/doctor/:doctorId', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), paginationValidator, getAppointmentsByDoctor);
 
-router.get('/', requireMinRole(ROLES.STAFF), paginationValidator, getAllAppointments);
-router.post('/', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), createAppointmentValidator, createAppointment);
+router.get('/', requireMinRole(ROLES.CITIZEN), paginationValidator, getAllAppointments);
+router.post('/', requireAnyRole(ROLES.CITIZEN, ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), createAppointmentValidator, createAppointment);
 
 router
   .route('/:id')
-  .get(requireMinRole(ROLES.STAFF), mongoIdParam(), getAppointmentById)
-  .put(requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), mongoIdParam(), updateAppointment);
+  .get(requireMinRole(ROLES.CITIZEN), mongoIdParam(), getAppointmentById)
+  .put(requireAnyRole(ROLES.CITIZEN, ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), mongoIdParam(), updateAppointment);
 
-router.patch('/:id/cancel', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), mongoIdParam(), cancelAppointment);
+router.patch('/:id/cancel', requireAnyRole(ROLES.CITIZEN, ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), mongoIdParam(), cancelAppointment);
 
 module.exports = router;

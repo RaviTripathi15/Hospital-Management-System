@@ -75,21 +75,34 @@ class PredictionService {
         throw new Error('Inventory item not found');
       }
 
+      // Verify item belongs to the given health center
+      if (inventory.healthCenter.toString() !== healthCenterId) {
+        throw new Error('Inventory item does not belong to the specified health center');
+      }
+
       // Get historical usage data (last 90 days)
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
       const historyData = inventory.restockHistory
-        .filter((h) => h.timestamp >= ninetyDaysAgo && h.operation === 'subtract')
-        .sort((a, b) => a.timestamp - b.timestamp);
+        .filter((h) => {
+          const hDate = h.createdAt || h._id?.getTimestamp?.() || new Date();
+          return hDate >= ninetyDaysAgo && h.operation === 'subtract';
+        })
+        .sort((a, b) => {
+          const aDate = a.createdAt || new Date();
+          const bDate = b.createdAt || new Date();
+          return aDate - bDate;
+        });
 
       // Group by week and calculate average usage
       const weeklyUsage = {};
       historyData.forEach((record) => {
+        const recordDate = record.createdAt || new Date();
         const week = Math.floor(
-          (Date.now() - record.timestamp) / (7 * 24 * 60 * 60 * 1000)
+          (Date.now() - recordDate) / (7 * 24 * 60 * 60 * 1000)
         );
-        weeklyUsage[week] = (weeklyUsage[week] || 0) + record.quantity;
+        weeklyUsage[week] = (weeklyUsage[week] || 0) + Math.abs(record.quantity || 0);
       });
 
       const usageValues = Object.values(weeklyUsage).sort((a, b) => a - b);
@@ -104,7 +117,7 @@ class PredictionService {
 
       // Calculate risk score
       const currentStock = inventory.currentStock || 0;
-      const daysOfStock = currentStock / predictedDailyUsage;
+      const daysOfStock = predictedDailyUsage > 0 ? currentStock / predictedDailyUsage : 999;
       let riskScore = 0;
 
       if (daysOfStock < daysAhead) {
@@ -149,12 +162,12 @@ class PredictionService {
       for (const item of inventory) {
         const usageData = item.restockHistory
           .filter((h) => h.operation === 'subtract')
-          .map((h) => h.quantity)
+          .map((h) => Math.abs(h.quantity || 0))
           .slice(-30);
 
         if (usageData.length > 0) {
           const avgDailyUsage = usageData.reduce((a, b) => a + b) / usageData.length;
-          const daysUntilEmpty = (item.currentStock || 0) / avgDailyUsage;
+          const daysUntilEmpty = avgDailyUsage > 0 ? (item.currentStock || 0) / avgDailyUsage : 999;
 
           if (daysUntilEmpty < thresholdDays) {
             warnings.push({
@@ -199,13 +212,19 @@ class PredictionService {
       const dailyPatients = {};
       footfallData.forEach((record) => {
         const date = record.timestamp.toISOString().split('T')[0];
-        dailyPatients[date] = (dailyPatients[date] || 0) + record.patientCount;
+        dailyPatients[date] = (dailyPatients[date] || 0) + (record.patientCount || 0);
       });
 
       const patientValues = Object.values(dailyPatients);
       if (patientValues.length === 0) {
         return {
-          prediction: 0,
+          healthCenterId: healthCenterId.toString(),
+          department: department || 'All',
+          currentAverageDailyFootfall: 0,
+          predictedDailyAverage: 0,
+          predictedTotalFootfall: 0,
+          trend: 0,
+          trendDirection: 'stable',
           confidence: 0,
           riskScore: 50,
           suggestedActions: ['Insufficient data for prediction'],
@@ -263,33 +282,35 @@ class PredictionService {
         date: { $gte: thirtyDaysAgo },
       });
 
+      // Count unique doctors from attendance records
+      const uniqueDoctorIds = new Set();
+      attendanceData.forEach((a) => uniqueDoctorIds.add(a.doctor ? a.doctor.toString() : null));
+      uniqueDoctorIds.delete(null);
+      
       // Calculate average consultation time (patients per doctor per shift)
       const avgPatientsPerDoctor = 15; // Average patients per doctor per day
-      const requiredDoctors = Math.ceil(
-        footfallPrediction.predictedDailyAverage / avgPatientsPerDoctor
-      );
-      const currentDoctors = attendanceData.filter((a) => a.role === 'doctor').length;
+      const predictedDailyAverage = footfallPrediction.predictedDailyAverage || 0;
+      const requiredDoctors = Math.ceil(predictedDailyAverage / avgPatientsPerDoctor);
+      const currentDoctorsCount = uniqueDoctorIds.size;
 
       return {
         healthCenterId: healthCenterId.toString(),
         department: department || 'All',
-        predictedDailyFootfall: footfallPrediction.predictedDailyAverage,
-        currentDoctors: Math.ceil(currentDoctors / 30), // Average daily
+        predictedDailyFootfall: predictedDailyAverage,
+        currentDoctors: currentDoctorsCount,
         requiredDoctors,
-        shortage: Math.max(0, requiredDoctors - Math.ceil(currentDoctors / 30)),
+        shortage: Math.max(0, requiredDoctors - currentDoctorsCount),
         utilizationRate:
-          Math.ceil(currentDoctors / 30) > 0
+          currentDoctorsCount > 0
             ? Math.round(
-                (footfallPrediction.predictedDailyAverage /
-                  (Math.ceil(currentDoctors / 30) * avgPatientsPerDoctor)) *
-                  100
+                (predictedDailyAverage / (currentDoctorsCount * avgPatientsPerDoctor)) * 100
               )
             : 0,
-        riskScore: requiredDoctors > Math.ceil(currentDoctors / 30) ? 70 : 30,
+        riskScore: requiredDoctors > currentDoctorsCount ? 70 : 30,
         confidence: footfallPrediction.confidence,
         suggestedActions: this._getDoctorSuggestedActions(
           requiredDoctors,
-          Math.ceil(currentDoctors / 30)
+          currentDoctorsCount
         ),
       };
     } catch (error) {
@@ -324,7 +345,15 @@ class PredictionService {
 
       if (occupancyValues.length === 0) {
         return {
-          prediction: 0,
+          healthCenterId: healthCenterId.toString(),
+          currentAverageOccupancy: 0,
+          predictedOccupancy: 0,
+          averageLengthOfStay: 0,
+          requiredBeds: 0,
+          bufferBeds: 0,
+          totalBedRequirement: 0,
+          trend: 0,
+          trendDirection: 'stable',
           confidence: 0,
           riskScore: 30,
           suggestedActions: ['Insufficient data for bed requirement prediction'],

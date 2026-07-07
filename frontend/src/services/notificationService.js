@@ -12,7 +12,7 @@ const notificationService = {
   },
 
   markAllRead: async () => {
-    const response = await api.patch('/notifications/read-all')
+    const response = await api.patch('/notifications/mark-all-read')
     return response.data
   },
 

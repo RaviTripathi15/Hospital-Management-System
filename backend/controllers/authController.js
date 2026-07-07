@@ -26,6 +26,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     success(
       {
         accessToken,
+        refreshToken,
         user: user.toPublic(),
       },
       'Authentication successful.'

@@ -8,6 +8,9 @@
 
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -63,7 +66,8 @@ const randomEmail = (name) => `${name.toLowerCase().replace(/\s+/g, '.')}${rando
 const seedDatabase = async () => {
   const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/health_platform';
 
-  await mongoose.connect(MONGO_URI);
+  console.log("Seeding MONGO_URI:", MONGO_URI);
+  await mongoose.connect(MONGO_URI, { family: 4 });
   logger.info('Connected to MongoDB for seeding.');
 
   const args = process.argv.slice(2);
@@ -133,6 +137,8 @@ const seedDatabase = async () => {
         isActive: true,
       });
 
+      const capacity = type === CENTER_TYPES.CHC ? randomInt(20, 50) : randomInt(5, 15);
+
       const center = await HealthCenter.create({
         name: `${blockName} ${type} ${district}`,
         type,
@@ -154,7 +160,9 @@ const seedDatabase = async () => {
         inCharge: staffUser._id,
         staff: [staffUser._id],
         facilities: facilities.slice(0, randomInt(3, 7)),
-        bedCapacity: type === CENTER_TYPES.CHC ? randomInt(20, 50) : randomInt(5, 15),
+        bedCapacity: capacity,
+        totalBeds: capacity,
+        availableBeds: capacity,
         operationalStatus: OPERATIONAL_STATUS.ACTIVE,
         registrationNumber: `BHR-${district.substring(0, 3).toUpperCase()}-${String(j + 1).padStart(4, '0')}`,
         catchmentPopulation: randomInt(5000, 50000),

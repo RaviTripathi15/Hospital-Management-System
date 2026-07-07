@@ -95,7 +95,7 @@ const UserSchema = new mongoose.Schema(
 );
 
 // ─── Indexes ──────────────────────────────────────────────────────────────────
-UserSchema.index({ email: 1 });
+// email has unique: true in schema, so no separate index needed
 UserSchema.index({ role: 1 });
 UserSchema.index({ healthCenter: 1 });
 UserSchema.index({ district: 1 });

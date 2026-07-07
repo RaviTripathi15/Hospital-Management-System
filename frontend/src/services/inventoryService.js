@@ -42,12 +42,7 @@ const inventoryService = {
   },
 
   getByCentre: async (centreId, params = {}) => {
-    const response = await api.get(`/inventory/centre/${centreId}`, { params })
-    return response.data
-  },
-
-  getRestockHistory: async (id) => {
-    const response = await api.get(`/inventory/${id}/restock-history`)
+    const response = await api.get(`/inventory/center/${centreId}`, { params })
     return response.data
   },
 }

@@ -38,6 +38,13 @@ exports.getAppointmentById = asyncHandler(async (req, res, next) => {
     .populate('createdBy', 'name');
 
   if (!appt) return next(new AppError('Appointment not found.', HTTP.NOT_FOUND));
+
+  // Check permissions: Citizens can only view their own appointments
+  const isStaffOrAdmin = [ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN].includes(req.user.role);
+  if (!isStaffOrAdmin && appt.createdBy?.toString() !== req.user._id.toString()) {
+    return next(new AppError('Access denied. You can only view your own appointments.', HTTP.FORBIDDEN));
+  }
+
   return res.status(HTTP.OK).json(success(appt, 'Appointment retrieved.'));
 });
 
@@ -115,6 +122,12 @@ exports.updateAppointment = asyncHandler(async (req, res, next) => {
   const appt = await Appointment.findById(req.params.id);
   if (!appt) return next(new AppError('Appointment not found.', HTTP.NOT_FOUND));
 
+  // Check permissions: Citizens can only update their own appointments
+  const isStaffOrAdmin = [ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN].includes(req.user.role);
+  if (!isStaffOrAdmin && appt.createdBy?.toString() !== req.user._id.toString()) {
+    return next(new AppError('Access denied. You can only update your own appointments.', HTTP.FORBIDDEN));
+  }
+
   if (appt.status === APPOINTMENT_STATUS.CANCELLED) {
     return next(new AppError('Cannot update a cancelled appointment.', HTTP.BAD_REQUEST));
   }
@@ -158,6 +171,12 @@ exports.updateAppointment = asyncHandler(async (req, res, next) => {
 exports.cancelAppointment = asyncHandler(async (req, res, next) => {
   const appt = await Appointment.findById(req.params.id);
   if (!appt) return next(new AppError('Appointment not found.', HTTP.NOT_FOUND));
+
+  // Check permissions: Citizens can only cancel their own appointments
+  const isStaffOrAdmin = [ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN].includes(req.user.role);
+  if (!isStaffOrAdmin && appt.createdBy?.toString() !== req.user._id.toString()) {
+    return next(new AppError('Access denied. You can only cancel your own appointments.', HTTP.FORBIDDEN));
+  }
 
   if (appt.status === APPOINTMENT_STATUS.COMPLETED) {
     return next(new AppError('Cannot cancel a completed appointment.', HTTP.BAD_REQUEST));
@@ -280,7 +299,9 @@ const buildFilter = (req) => {
     if (endDate) filter.date.$lte = new Date(endDate);
   }
 
-  if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
+  if (req.user.role === ROLES.CITIZEN) {
+    filter.createdBy = req.user._id;
+  } else if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
     filter.healthCenter = req.user.healthCenter;
   }
 

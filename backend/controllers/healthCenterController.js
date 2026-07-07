@@ -213,6 +213,20 @@ exports.assignStaff = asyncHandler(async (req, res, next) => {
   return res.status(HTTP.OK).json(success(center, `Staff ${action === 'add' ? 'assigned' : 'removed'}.`));
 });
 
+// ─── @route GET /api/v1/health-centers/:id/staff ───────────────────────────────
+exports.getCenterStaff = asyncHandler(async (req, res, next) => {
+  const center = await HealthCenter.findById(req.params.id)
+    .populate('staff', 'name email role phone')
+    .populate('inCharge', 'name email role phone');
+
+  if (!center) return next(new AppError('Health centre not found.', HTTP.NOT_FOUND));
+
+  return res.status(HTTP.OK).json(success({
+    inCharge: center.inCharge,
+    staff: center.staff,
+  }, 'Centre staff retrieved.'));
+});
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const buildCenterFilter = (req) => {
   const filter = {};

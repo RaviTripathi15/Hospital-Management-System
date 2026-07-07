@@ -17,7 +17,7 @@ class ResourceOptimizationService {
       logger.info('Generating resource optimization recommendations', { daysAhead });
 
       // Get all health centers
-      const healthCenters = await HealthCenter.find({ status: 'active' }).lean();
+      const healthCenters = await HealthCenter.find({ isActive: true, operationalStatus: 'active' }).lean();
       if (healthCenters.length === 0) {
         return {
           recommendations: [],
@@ -132,16 +132,16 @@ class ResourceOptimizationService {
   async getMedicineInventoryStatus(centerId) {
     try {
       const inventory = await Inventory.aggregate([
-        { $match: { healthCenterId: centerId } },
+        { $match: { healthCenter: centerId } },
         {
           $group: {
             _id: null,
             totalItems: { $sum: 1 },
-            totalQuantity: { $sum: '$quantity' },
+            totalQuantity: { $sum: '$currentStock' },
             lowStockItems: {
               $sum: {
                 $cond: [
-                  { $lt: ['$quantity', { $multiply: ['$reorderLevel', 1.5] }] },
+                  { $lt: ['$currentStock', { $multiply: ['$minStockLevel', 1.5] }] },
                   1,
                   0,
                 ],
@@ -149,10 +149,10 @@ class ResourceOptimizationService {
             },
             criticalStockItems: {
               $sum: {
-                $cond: [{ $lt: ['$quantity', '$reorderLevel'] }, 1, 0],
+                $cond: [{ $lt: ['$currentStock', '$minStockLevel'] }, 1, 0],
               },
             },
-            totalValue: { $sum: { $multiply: ['$quantity', '$unitCost'] } },
+            totalValue: { $sum: { $multiply: ['$currentStock', '$unitCost'] } },
           },
         },
       ]);
@@ -194,13 +194,13 @@ class ResourceOptimizationService {
       const attendance = await Attendance.aggregate([
         {
           $match: {
-            healthCenterId: centerId,
+            healthCenter: centerId,
             date: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
           },
         },
         {
           $group: {
-            _id: '$userId',
+            _id: '$doctor',
             presentDays: {
               $sum: { $cond: [{ $eq: ['$status', 'present'] }, 1, 0] },
             },
@@ -215,9 +215,9 @@ class ResourceOptimizationService {
       let predictedNeed = 0;
       try {
         const footfall = await Footfall.aggregate([
-          { $match: { healthCenterId: centerId } },
+          { $match: { healthCenter: centerId } },
           { $limit: 90 },
-          { $group: { _id: null, avgDaily: { $avg: '$count' } } },
+          { $group: { _id: null, avgDaily: { $avg: '$patientCount' } } },
         ]);
 
         if (footfall.length > 0) {
@@ -250,8 +250,8 @@ class ResourceOptimizationService {
       const bedStatus = await BedAllocation.aggregate([
         {
           $match: {
-            healthCenterId: centerId,
-            status: { $in: ['active', 'occupied'] },
+            healthCenter: centerId,
+            status: { $in: ['allocated'] },
           },
         },
         {
@@ -259,7 +259,7 @@ class ResourceOptimizationService {
             _id: null,
             totalBeds: { $sum: 1 },
             occupiedBeds: {
-              $sum: { $cond: [{ $eq: ['$status', 'occupied'] }, 1, 0] },
+              $sum: { $cond: [{ $eq: ['$status', 'allocated'] }, 1, 0] },
             },
           },
         },
@@ -300,8 +300,8 @@ class ResourceOptimizationService {
   async getStaffResourceStatus(centerId) {
     try {
       // Get total active staff
-      const staffCount = await Attendance.distinct('userId', {
-        healthCenterId: centerId,
+      const staffCount = await Attendance.distinct('doctor', {
+        healthCenter: centerId,
         date: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
       });
 
@@ -309,7 +309,7 @@ class ResourceOptimizationService {
       const attendance = await Attendance.aggregate([
         {
           $match: {
-            healthCenterId: centerId,
+            healthCenter: centerId,
             date: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
           },
         },

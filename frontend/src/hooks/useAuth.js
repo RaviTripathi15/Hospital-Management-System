@@ -13,7 +13,7 @@ export function useAuth() {
   const login = useCallback(
     async (email, password) => {
       const data = await authService.login(email, password)
-      const { user: userData, token: accessToken, refreshToken } = data.data || data
+      const { user: userData, accessToken, refreshToken } = data.data || data
       storeLogin(userData, accessToken, refreshToken)
       toast.success(t('auth.loginSuccess'))
       return userData

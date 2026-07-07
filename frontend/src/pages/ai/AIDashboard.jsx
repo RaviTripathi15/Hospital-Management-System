@@ -1,10 +1,16 @@
 import React from 'react'
+import PredictionDashboard from '@/components/dashboard/PredictionDashboard'
 
 export default function AIDashboard() {
   return (
-    <div className="card p-6">
-      <h2 className="text-xl font-bold mb-4">AI Insight Dashboard</h2>
-      <p className="text-gray-600 dark:text-gray-400">Automated predictions, disease tracking, and resource forecasting metrics.</p>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Health & Resource Insights</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">
+          Automated disease outbreak warnings, patient load predictions, and inventory optimization recommendations.
+        </p>
+      </div>
+      <PredictionDashboard />
     </div>
   )
 }

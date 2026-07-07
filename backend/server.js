@@ -2,6 +2,10 @@
 
 require('dotenv').config();
 
+// Set Google DNS servers to resolve MongoDB Atlas DNS
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const express = require('express');
 const http = require('http');
 const { Server: SocketIOServer } = require('socket.io');

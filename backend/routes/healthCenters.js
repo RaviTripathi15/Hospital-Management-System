@@ -5,7 +5,7 @@ const router = express.Router();
 
 const {
   getAllCenters, getCenterById, createCenter, updateCenter,
-  deleteCenter, getCenterStats, getNearbyCenter, assignStaff,
+  deleteCenter, getCenterStats, getNearbyCenter, assignStaff, getCenterStaff,
 } = require('../controllers/healthCenterController');
 
 const { protect, requireMinRole, optionalAuth } = require('../middleware/auth');
@@ -29,5 +29,6 @@ router
 
 router.get('/:id/stats', mongoIdParam(), getCenterStats);
 router.post('/:id/staff', requireMinRole(ROLES.DISTRICT_ADMIN), mongoIdParam(), assignStaff);
+router.get('/:id/staff', mongoIdParam(), getCenterStaff);
 
 module.exports = router;
