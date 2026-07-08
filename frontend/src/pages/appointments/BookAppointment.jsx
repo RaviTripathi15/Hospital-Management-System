@@ -36,7 +36,7 @@ export default function BookAppointment() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { isSuperAdmin, isDistrictAdmin } = usePermissions()
+  const { isSuperAdmin, isDistrictAdmin, isCitizen } = usePermissions()
 
   const [patients, setPatients] = useState([])
   const [centers, setCenters] = useState([])
@@ -71,9 +71,21 @@ export default function BookAppointment() {
     const fetchPatients = async () => {
       setIsLoadingPatients(true)
       try {
-        const response = await patientService.getAll({ limit: 100 })
+        let response
+        if (isCitizen) {
+          response = await patientService.getMyProfile()
+        } else {
+          response = await patientService.getAll({ limit: 100 })
+        }
         const data = response.data || response.results || response || []
         setPatients(data)
+        // Auto-select if there is only one patient
+        if (data.length === 1) {
+          setFormData((prev) => ({
+            ...prev,
+            patient: data[0]._id,
+          }))
+        }
       } catch (err) {
         console.error(err)
         toast.error('Failed to load patients list')
@@ -81,13 +93,15 @@ export default function BookAppointment() {
         setIsLoadingPatients(false)
       }
     }
-    fetchPatients()
-  }, [])
+    if (user) {
+      fetchPatients()
+    }
+  }, [isCitizen, user])
 
-  // Load Health Centers (Admins only)
+  // Load Health Centers (Admins and Citizens)
   useEffect(() => {
     const fetchCenters = async () => {
-      if (isSuperAdmin || isDistrictAdmin) {
+      if (isSuperAdmin || isDistrictAdmin || isCitizen) {
         try {
           const response = await healthCenterService.getAll({ limit: 100 })
           const data = response.data || response.results || response || []
@@ -99,7 +113,7 @@ export default function BookAppointment() {
       }
     }
     fetchCenters()
-  }, [isSuperAdmin, isDistrictAdmin])
+  }, [isSuperAdmin, isDistrictAdmin, isCitizen])
 
   // Load Doctors when center changes
   useEffect(() => {
@@ -212,7 +226,7 @@ export default function BookAppointment() {
             {/* Health Center */}
             <div>
               <label className="label">Health Center *</label>
-              {isSuperAdmin || isDistrictAdmin ? (
+              {isSuperAdmin || isDistrictAdmin || isCitizen ? (
                 <select
                   name="healthCenter"
                   className="input"

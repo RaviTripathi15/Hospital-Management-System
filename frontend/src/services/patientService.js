@@ -6,6 +6,11 @@ const patientService = {
     return response.data
   },
 
+  getMyProfile: async () => {
+    const response = await api.get('/patients/my-profile')
+    return response.data
+  },
+
   getById: async (id) => {
     const response = await api.get(`/patients/${id}`)
     return response.data

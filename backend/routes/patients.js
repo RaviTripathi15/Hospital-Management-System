@@ -6,6 +6,7 @@ const router = express.Router();
 const {
   getAllPatients, getPatientById, registerPatient, updatePatient,
   getPatientHistory, searchPatient, getPatientsByCenter, addVisit,
+  getCitizenPatientProfile,
 } = require('../controllers/patientController');
 
 const { protect, requireMinRole, requireAnyRole } = require('../middleware/auth');
@@ -13,6 +14,8 @@ const { ROLES } = require('../config/constants');
 const { createPatientValidator, paginationValidator, mongoIdParam } = require('../middleware/validator');
 
 router.use(protect);
+
+router.get('/my-profile', getCitizenPatientProfile);
 
 router.get('/search', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), searchPatient);
 router.get('/center/:centerId', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), paginationValidator, getPatientsByCenter);

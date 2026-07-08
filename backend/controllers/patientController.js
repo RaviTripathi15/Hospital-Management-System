@@ -212,3 +212,15 @@ const buildPatientFilter = (req) => {
 
   return filter;
 };
+
+// ─── @route GET /api/v1/patients/my-profile ─────────────────────────────────
+exports.getCitizenPatientProfile = asyncHandler(async (req, res, next) => {
+  if (!req.user.phone) {
+    return res.status(HTTP.OK).json(success([], 'No phone number in user profile.'));
+  }
+
+  const patients = await Patient.find({ phone: req.user.phone, isActive: true })
+    .populate('healthCenter', 'name district type block contactNumber');
+
+  return res.status(HTTP.OK).json(success(patients, 'My patient profiles retrieved.'));
+});
