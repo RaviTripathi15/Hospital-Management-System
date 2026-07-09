@@ -77,15 +77,19 @@ const sendErrorProd = (err, res) => {
   }
 };
 
-// ─── Global Error Handler Middleware ─────────────────────────────────────────
 const errorHandler = (err, req, res, _next) => {
   err.statusCode = err.statusCode || HTTP.SERVER_ERROR;
   err.status = err.status || 'error';
 
-  logger.error(`${err.statusCode} ${err.message} [${req.method} ${req.originalUrl}]`, {
-    stack: err.stack,
-    user: req.user ? req.user._id : 'unauthenticated',
-  });
+  // Log 404 errors as warnings to prevent log clutter in production
+  if (err.statusCode === HTTP.NOT_FOUND) {
+    logger.warn(`404 ${err.message} [${req.method} ${req.originalUrl}]`);
+  } else {
+    logger.error(`${err.statusCode} ${err.message} [${req.method} ${req.originalUrl}]`, {
+      stack: err.stack,
+      user: req.user ? req.user._id : 'unauthenticated',
+    });
+  }
 
   if (process.env.NODE_ENV === 'development') {
     return sendErrorDev(err, res);

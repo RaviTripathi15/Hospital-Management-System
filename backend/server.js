@@ -39,6 +39,8 @@ const predictionRoutes = require('./routes/predictions');
 
 // ─── App Init ───────────────────────────────────────────────────────────────
 const app = express();
+// Enable trust proxy so rate limiting works behind Render load balancer
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // Sanitize CLIENT_URL to prevent header errors due to trailing spaces, newlines, or quotes
@@ -128,7 +130,22 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ─── Global Rate Limiting ────────────────────────────────────────────────────
 app.use('/api', apiLimiter);
 
-// ─── Health-check Route ──────────────────────────────────────────────────────
+// ─── Base & Health-check Routes ─────────────────────────────────────────────
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    message: 'Welcome to the Hospital Management API',
+    health: '/health',
+    version: '1.0.0',
+  });
+});
+
+app.get('/api/v1', (_req, res) => {
+  res.status(200).json({
+    message: 'Hospital Management API v1 Base Endpoint',
+    status: 'active',
+  });
+});
+
 app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
