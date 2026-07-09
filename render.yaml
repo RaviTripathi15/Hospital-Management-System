@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: hospital-management-backend
+    runtime: node
+    plan: starter
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        sync: false
+        placeholder: "Your frontend app URL (e.g. https://my-frontend.onrender.com)"
+      - key: MONGO_URI
+        sync: false
+        placeholder: "Your MongoDB Atlas connection string"
+      - key: MONGO_URI_PROD
+        sync: false
+        placeholder: "Your MongoDB Atlas production connection string (can be same as MONGO_URI)"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRE
+        value: 15m
+      - key: JWT_REFRESH_EXPIRE
+        value: 7d
+      - key: BCRYPT_SALT_ROUNDS
+        value: 12
