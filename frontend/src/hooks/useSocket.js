@@ -3,7 +3,7 @@ import { io } from 'socket.io-client'
 import { useAuthStore } from '@/store/authStore'
 import { useNotificationStore } from '@/store/notificationStore'
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000'
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin)
 
 let socketInstance = null
 

@@ -137,7 +137,7 @@ export default function UserProfile() {
           <div className="w-24 h-24 rounded-2xl bg-white/20 border-2 border-white/40 overflow-hidden flex items-center justify-center relative">
             {previewPic ? (
               <img
-                src={previewPic.startsWith('data:') ? previewPic : `http://localhost:5000${previewPic}`}
+                src={previewPic.startsWith('data:') ? previewPic : `${import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin)}${previewPic}`}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
