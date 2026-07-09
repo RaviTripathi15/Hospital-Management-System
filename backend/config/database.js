@@ -11,7 +11,7 @@ let retryCount = 0;
 const connectDB = async () => {
   const uri =
     process.env.NODE_ENV === 'production'
-      ? process.env.MONGO_URI_PROD
+      ? (process.env.MONGO_URI_PROD || process.env.MONGO_URI)
       : process.env.MONGO_URI;
 
   if (!uri) {
