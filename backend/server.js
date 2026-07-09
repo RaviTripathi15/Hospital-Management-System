@@ -41,10 +41,16 @@ const predictionRoutes = require('./routes/predictions');
 const app = express();
 const server = http.createServer(app);
 
+// Sanitize CLIENT_URL to prevent header errors due to trailing spaces, newlines, or quotes
+let clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+if (typeof clientUrl === 'string') {
+  clientUrl = clientUrl.trim().replace(/^["']|["']$/g, '');
+}
+
 // ─── Socket.io Setup ────────────────────────────────────────────────────────
 const io = new SocketIOServer(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: clientUrl,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -74,7 +80,7 @@ io.on('connection', (socket) => {
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: clientUrl,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
