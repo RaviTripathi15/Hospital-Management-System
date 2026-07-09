@@ -155,6 +155,15 @@ app.get('/health', (_req, res) => {
   });
 });
 
+app.get('/api/v1/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+  });
+});
+
 // ─── API Routes ──────────────────────────────────────────────────────────────
 const API = '/api/v1';
 app.use(`${API}/auth`, authRoutes);
@@ -185,7 +194,8 @@ const startServer = async () => {
 
     server.listen(PORT, () => {
       logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-      logger.info(`API base: http://localhost:${PORT}${API}`);
+      const hostUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+      logger.info(`API base: ${hostUrl}${API}`);
     });
 
     // Start scheduled jobs
