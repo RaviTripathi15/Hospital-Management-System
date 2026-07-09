@@ -3,7 +3,7 @@ services:
   - type: web
     name: hospital-management-backend
     runtime: node
-    plan: starter
+    plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
