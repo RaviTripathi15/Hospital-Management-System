@@ -47,10 +47,38 @@ if (typeof clientUrl === 'string') {
   clientUrl = clientUrl.trim().replace(/^["']|["']$/g, '');
 }
 
+const allowedOrigins = [
+  clientUrl,
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(
+      (allowed) => allowed.replace(/\/$/, '') === origin.replace(/\/$/, '')
+    );
+    
+    // Dynamically allow any Render subdomain for ease of blueprint deployments
+    const isRenderSubdomain = /\.onrender\.com$/.test(origin);
+    
+    if (isAllowed || isRenderSubdomain) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
 // ─── Socket.io Setup ────────────────────────────────────────────────────────
 const io = new SocketIOServer(server, {
   cors: {
-    origin: clientUrl,
+    origin: corsOptions.origin,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -78,14 +106,7 @@ io.on('connection', (socket) => {
 
 // ─── Security Middleware ─────────────────────────────────────────────────────
 app.use(helmet());
-app.use(
-  cors({
-    origin: clientUrl,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+app.use(cors(corsOptions));
 
 // ─── General Middleware ──────────────────────────────────────────────────────
 app.use(compression());
