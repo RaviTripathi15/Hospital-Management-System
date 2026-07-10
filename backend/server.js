@@ -103,7 +103,6 @@ const corsOptions = {
   origin: corsOriginResolver,
   credentials: true,                                         // allow cookies / Authorization header
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 200,                                 // IE11 compatibility
 };
 
