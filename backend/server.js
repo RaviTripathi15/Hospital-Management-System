@@ -1,8 +1,9 @@
 'use strict';
 
+// ─── Load environment variables first, before anything else ─────────────────
 require('dotenv').config();
 
-// Set Google DNS servers to resolve MongoDB Atlas DNS
+// ─── Set Google DNS to reliably resolve MongoDB Atlas hostnames ──────────────
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
@@ -37,56 +38,87 @@ const bedRoutes = require('./routes/beds');
 const attendanceRoutes = require('./routes/attendance');
 const predictionRoutes = require('./routes/predictions');
 
-// ─── App Init ───────────────────────────────────────────────────────────────
+// ─── App Init ────────────────────────────────────────────────────────────────
 const app = express();
-// Enable trust proxy so rate limiting works behind Render load balancer
+
+// ─── CRITICAL: Trust Render's load-balancer proxy ────────────────────────────
+// Render routes all traffic through a reverse proxy that sets X-Forwarded-For.
+// Without this Express rejects the header → ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+// and express-rate-limit cannot determine the real client IP.
+// '1' means we trust exactly one hop of proxy (Render's edge layer).
 app.set('trust proxy', 1);
+
 const server = http.createServer(app);
 
-// Sanitize CLIENT_URL to prevent header errors due to trailing spaces, newlines, or quotes
-let clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-if (typeof clientUrl === 'string') {
-  clientUrl = clientUrl.trim().replace(/^["']|["']$/g, '');
-}
+// ─── Build the CORS origin whitelist ─────────────────────────────────────────
+// CLIENT_URL is set in Render's environment dashboard to your Render frontend URL
+// e.g. https://health-platform-frontend.onrender.com
+const rawClientUrl = (process.env.CLIENT_URL || '').trim().replace(/^["']|["']$/g, '').replace(/\/$/, '');
 
-const allowedOrigins = [
-  clientUrl,
+// Always include localhost URLs so local dev still works without changing .env
+const allowedOrigins = new Set([
   'http://localhost:3000',
   'http://localhost:5173',
-];
+  'http://localhost:4173',    // vite preview
+]);
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    
-    const isAllowed = allowedOrigins.some(
-      (allowed) => allowed.replace(/\/$/, '') === origin.replace(/\/$/, '')
-    );
-    
-    // Dynamically allow any Render subdomain for ease of blueprint deployments
-    const isRenderSubdomain = /\.onrender\.com$/.test(origin);
-    
-    if (isAllowed || isRenderSubdomain) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+// Add the production frontend URL if it is defined and non-empty
+if (rawClientUrl) {
+  allowedOrigins.add(rawClientUrl);
+}
+
+// Support multiple comma-separated URLs in CLIENT_URL
+// e.g. CLIENT_URL=https://app.onrender.com,https://custom-domain.com
+rawClientUrl.split(',').forEach((url) => {
+  const trimmed = url.trim().replace(/\/$/, '');
+  if (trimmed) allowedOrigins.add(trimmed);
+});
+
+/**
+ * CORS origin resolver.
+ * - Requests with no Origin header (server-to-server, curl, Postman) → allow.
+ * - Any *.onrender.com subdomain is automatically whitelisted so staging
+ *   preview URLs work without changing env vars.
+ * - Everything else must be in the explicit allowedOrigins set.
+ */
+const corsOriginResolver = (origin, callback) => {
+  // No origin = non-browser request (Postman, server-to-server, curl) → allow
+  if (!origin) return callback(null, true);
+
+  const normalised = origin.replace(/\/$/, '');
+
+  if (
+    allowedOrigins.has(normalised) ||
+    /^https:\/\/[a-zA-Z0-9-]+\.onrender\.com$/.test(normalised)
+  ) {
+    return callback(null, true);
+  }
+
+  // Origin is not allowed
+  logger.warn(`CORS blocked origin: ${origin}`);
+  return callback(new Error(`CORS: origin ${origin} is not allowed`));
 };
 
-// ─── Socket.io Setup ────────────────────────────────────────────────────────
+const corsOptions = {
+  origin: corsOriginResolver,
+  credentials: true,                                         // allow cookies / Authorization header
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200,                                 // IE11 compatibility
+};
+
+// ─── Socket.io Setup ─────────────────────────────────────────────────────────
 const io = new SocketIOServer(server, {
   cors: {
-    origin: corsOptions.origin,
+    origin: corsOriginResolver,
     methods: ['GET', 'POST'],
     credentials: true,
   },
+  // On Render, connections pass through a load balancer.
+  // Prefer polling first so the upgrade to WebSocket happens correctly.
+  transports: ['polling', 'websocket'],
 });
 
-// Attach io to every request so controllers can emit events
 app.set('io', io);
 
 io.on('connection', (socket) => {
@@ -101,21 +133,33 @@ io.on('connection', (socket) => {
     socket.leave(room);
   });
 
-  socket.on('disconnect', () => {
-    logger.info(`Socket disconnected: ${socket.id}`);
+  socket.on('disconnect', (reason) => {
+    logger.info(`Socket disconnected: ${socket.id} — reason: ${reason}`);
   });
 });
 
-// ─── Security Middleware ─────────────────────────────────────────────────────
-app.use(helmet());
+// ─── Security Middleware ──────────────────────────────────────────────────────
+// Helmet sets security-relevant HTTP headers.
+// On Render (HTTPS only) we can be stricter with Content-Security-Policy.
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow CDN fonts / images
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+  })
+);
+
+// Apply CORS before any route is matched
 app.use(cors(corsOptions));
 
-// ─── General Middleware ──────────────────────────────────────────────────────
+// Explicitly handle preflight OPTIONS for all routes
+app.options('*', cors(corsOptions));
+
+// ─── General Middleware ───────────────────────────────────────────────────────
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// HTTP request logging via morgan → winston
+// HTTP request logging  (skip in test mode to keep jest output clean)
 if (process.env.NODE_ENV !== 'test') {
   app.use(
     morgan('combined', {
@@ -124,47 +168,72 @@ if (process.env.NODE_ENV !== 'test') {
   );
 }
 
-// Static file serving for uploads
+// ─── Static Files ─────────────────────────────────────────────────────────────
+// Serve uploaded files (profile pics, reports, etc.)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ─── Global Rate Limiting ────────────────────────────────────────────────────
+// ─── Global Rate Limiting ─────────────────────────────────────────────────────
+// Applied to all /api/* paths.  The limiter itself also has trustProxy configured.
 app.use('/api', apiLimiter);
 
-// ─── Base & Health-check Routes ─────────────────────────────────────────────
+// ─── Base & Health-check Endpoints ───────────────────────────────────────────
+// Render's health-check probe hits GET / by default.
+// Returning 200 JSON here stops the "Route not found: /" 404 errors in logs.
 app.get('/', (_req, res) => {
   res.status(200).json({
-    message: 'Welcome to the Hospital Management API',
-    health: '/health',
+    message: 'Health Platform API is running',
     version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    docs: '/api/v1/health',
   });
 });
 
-app.get('/api/v1', (_req, res) => {
-  res.status(200).json({
-    message: 'Hospital Management API v1 Base Endpoint',
-    status: 'active',
-  });
-});
-
+// /health — Render can be configured to check this path
 app.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 
+// /api/v1 base — stops the "Route not found: /api/v1" 404
+app.get('/api/v1', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Health Platform API v1',
+    endpoints: {
+      auth: '/api/v1/auth',
+      users: '/api/v1/users',
+      healthCenters: '/api/v1/health-centers',
+      patients: '/api/v1/patients',
+      inventory: '/api/v1/inventory',
+      appointments: '/api/v1/appointments',
+      reports: '/api/v1/reports',
+      analytics: '/api/v1/analytics',
+      ai: '/api/v1/ai',
+      notifications: '/api/v1/notifications',
+      footfall: '/api/v1/footfall',
+      beds: '/api/v1/beds',
+      attendance: '/api/v1/attendance',
+      predictions: '/api/v1/predictions',
+    },
+  });
+});
+
+// /api/v1/health — explicit versioned health check endpoint
 app.get('/api/v1/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0',
   });
 });
 
-// ─── API Routes ──────────────────────────────────────────────────────────────
+// ─── API Routes ───────────────────────────────────────────────────────────────
 const API = '/api/v1';
 app.use(`${API}/auth`, authRoutes);
 app.use(`${API}/users`, userRoutes);
@@ -182,35 +251,45 @@ app.use(`${API}/attendance`, attendanceRoutes);
 app.use(`${API}/predictions`, predictionRoutes);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
+// 404 catcher — must come after all routes
 app.use(notFound);
+// Global error handler — must have 4 params to be treated as error middleware
 app.use(errorHandler);
 
-// ─── Server Bootstrap ────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
+// ─── Server Bootstrap ─────────────────────────────────────────────────────────
+// Render injects PORT automatically; always bind to 0.0.0.0 (not 127.0.0.1)
+const PORT = parseInt(process.env.PORT, 10) || 5000;
 
 const startServer = async () => {
   try {
     await connectDB();
 
-    server.listen(PORT, () => {
-      logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-      const hostUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-      logger.info(`API base: ${hostUrl}${API}`);
+    // Bind to 0.0.0.0 so Render's router can reach the process
+    server.listen(PORT, '0.0.0.0', () => {
+      const baseUrl =
+        process.env.RENDER_EXTERNAL_URL ||
+        `http://localhost:${PORT}`;
+      logger.info(`✅ Server running in [${process.env.NODE_ENV}] mode`);
+      logger.info(`✅ Listening on port ${PORT} (0.0.0.0)`);
+      logger.info(`✅ API base: ${baseUrl}${API}`);
+      logger.info(`✅ Health: ${baseUrl}/health`);
+      logger.info(`✅ Allowed CORS origins: ${[...allowedOrigins].join(', ')}`);
     });
 
-    // Start scheduled jobs
+    // Start cron jobs after the server is listening
     initCronJobs();
   } catch (err) {
-    logger.error(`Failed to start server: ${err.message}`);
+    logger.error(`❌ Failed to start server: ${err.message}`);
     process.exit(1);
   }
 };
 
 startServer();
 
-// ─── Unhandled Rejections / Exceptions ───────────────────────────────────────
+// ─── Process-level error guards ───────────────────────────────────────────────
 process.on('unhandledRejection', (err) => {
   logger.error(`Unhandled Rejection: ${err.message}`);
+  // Gracefully close the server before exiting
   server.close(() => process.exit(1));
 });
 

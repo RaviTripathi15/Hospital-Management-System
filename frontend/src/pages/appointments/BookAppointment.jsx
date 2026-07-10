@@ -125,7 +125,7 @@ export default function BookAppointment() {
       try {
         const response = await healthCenterService.getStaff(formData.healthCenter)
         // Handle response where staff might be array directly or nested
-        const staffList = response.data || response.results || response || []
+        const staffList = response.data?.staff || (Array.isArray(response.data) ? response.data : [])
         // Filter for doctor role or show all staff if roles aren't strict
         setDoctors(staffList)
       } catch (err) {
