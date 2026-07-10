@@ -43,48 +43,9 @@ export default defineConfig(({ mode }) => {
       },
     },
 
-    // ─── Production build ────────────────────────────────────────────────────
     build: {
       // Raise the bundle-size warning threshold (recharts + leaflet are large)
       chunkSizeWarningLimit: 1500,
-
-      rollupOptions: {
-        output: {
-          // Split vendor code into separate chunks for better caching
-          manualChunks: (id) => {
-            if (id.includes('node_modules/react') ||
-                id.includes('node_modules/react-dom') ||
-                id.includes('node_modules/react-router-dom') ||
-                id.includes('node_modules/scheduler')) {
-              return 'vendor-react'
-            }
-            if (id.includes('node_modules/recharts') ||
-                id.includes('node_modules/d3-') ||
-                id.includes('node_modules/victory-vendor')) {
-              return 'vendor-charts'
-            }
-            if (id.includes('node_modules/leaflet') ||
-                id.includes('node_modules/react-leaflet') ||
-                id.includes('node_modules/@react-leaflet')) {
-              return 'vendor-maps'
-            }
-            if (id.includes('node_modules/@tanstack')) {
-              return 'vendor-query'
-            }
-            if (id.includes('node_modules/i18next') ||
-                id.includes('node_modules/react-i18next')) {
-              return 'vendor-i18n'
-            }
-            if (id.includes('node_modules/zustand')) {
-              return 'vendor-zustand'
-            }
-            if (id.includes('node_modules/socket.io-client') ||
-                id.includes('node_modules/engine.io-client')) {
-              return 'vendor-socket'
-            }
-          },
-        },
-      },
     },
   }
 })
