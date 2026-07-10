@@ -64,13 +64,13 @@ const allowedOrigins = new Set([
 
 // Add the production frontend URL if it is defined and non-empty
 if (rawClientUrl) {
-  allowedOrigins.add(rawClientUrl);
+  allowedOrigins.add(rawClientUrl.toLowerCase());
 }
 
 // Support multiple comma-separated URLs in CLIENT_URL
 // e.g. CLIENT_URL=https://app.onrender.com,https://custom-domain.com
 rawClientUrl.split(',').forEach((url) => {
-  const trimmed = url.trim().replace(/\/$/, '');
+  const trimmed = url.trim().replace(/\/$/, '').toLowerCase();
   if (trimmed) allowedOrigins.add(trimmed);
 });
 
@@ -85,11 +85,11 @@ const corsOriginResolver = (origin, callback) => {
   // No origin = non-browser request (Postman, server-to-server, curl) → allow
   if (!origin) return callback(null, true);
 
-  const normalised = origin.replace(/\/$/, '');
+  const normalised = origin.trim().toLowerCase().replace(/\/$/, '');
 
   if (
     allowedOrigins.has(normalised) ||
-    /^https:\/\/[a-zA-Z0-9-]+\.onrender\.com$/.test(normalised)
+    /^https:\/\/[a-zA-Z0-9.-]+\.onrender\.com$/i.test(normalised)
   ) {
     return callback(null, true);
   }
