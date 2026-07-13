@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, Package, Calendar, FileText, BarChart2,
   Brain, Building2, UserCog, Settings, LogOut, Heart, X,
-  ChevronLeft, ChevronRight, Activity, TrendingUp, Clock3
+  ChevronLeft, ChevronRight, Activity, TrendingUp, Clock3, ShieldCheck
 } from 'lucide-react'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useAuth } from '@/hooks/useAuth'
@@ -48,6 +48,7 @@ const NAV_GROUPS = [
     label: 'navigation.administration',
     items: [
       { path: '/admin/centers', icon: Building2, label: 'navigation.healthCenters', roles: ['district_admin', 'super_admin'] },
+      { path: '/admin/role-requests', icon: ShieldCheck, label: 'navigation.roleRequests', roles: ['district_admin', 'super_admin'] },
       { path: '/admin/users', icon: UserCog, label: 'navigation.userManagement', roles: ['super_admin'] },
       { path: '/admin/settings', icon: Settings, label: 'navigation.systemSettings', roles: ['super_admin'] },
     ],

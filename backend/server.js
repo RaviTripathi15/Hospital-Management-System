@@ -39,6 +39,7 @@ const footfallRoutes = require('./routes/footfall');
 const bedRoutes = require('./routes/beds');
 const attendanceRoutes = require('./routes/attendance');
 const predictionRoutes = require('./routes/predictions');
+const roleRequestRoutes = require('./routes/roleRequests');
 
 // ─── App Init ────────────────────────────────────────────────────────────────
 const app = express();
@@ -250,6 +251,7 @@ app.use(`${API}/footfall`, footfallRoutes);
 app.use(`${API}/beds`, bedRoutes);
 app.use(`${API}/attendance`, attendanceRoutes);
 app.use(`${API}/predictions`, predictionRoutes);
+app.use(`${API}/role-requests`, roleRequestRoutes);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 // 404 catcher — must come after all routes

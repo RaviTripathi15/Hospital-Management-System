@@ -11,7 +11,7 @@ export default function ProtectedRoute({ allowedRoles }) {
   }
 
   if (allowedRoles && user?.role && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />
+    return <Navigate to="/unauthorized" state={{ allowedRoles }} replace />
   }
 
   return <Outlet />

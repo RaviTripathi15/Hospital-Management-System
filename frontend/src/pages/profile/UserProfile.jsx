@@ -1,17 +1,26 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import authService from '@/services/authService'
+import roleRequestService from '@/services/roleRequestService'
+import { usePermissions } from '@/hooks/usePermissions'
+import { useAuthStore } from '@/store/authStore'
 import { changePasswordSchema } from '@/utils/validators'
-import { User, Phone, MapPin, Key, Upload, Shield, Eye, EyeOff, Loader2, Calendar, Building, LogIn } from 'lucide-react'
+import { User, Phone, MapPin, Key, Upload, Shield, Eye, EyeOff, Loader2, Calendar, Building, LogIn, ArrowLeftRight, CheckCircle2, XCircle, AlertCircle, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
+import RoleSwitchModal from '@/components/common/RoleSwitchModal'
+import { AnimatePresence } from 'framer-motion'
 
 export default function UserProfile() {
   const { t } = useTranslation()
   const { user, updateUser, refreshUser } = useAuth()
-  const [activeTab, setActiveTab] = useState('profile') // 'profile' or 'security'
+  const permissions = usePermissions()
+  const [activeTab, setActiveTab] = useState('profile') // 'profile', 'security', 'role'
+  const [latestRequest, setLatestRequest] = useState(null)
+  const [isRequestLoading, setIsRequestLoading] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isLoadingPassword, setIsLoadingPassword] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -20,6 +29,31 @@ export default function UserProfile() {
   const [selectedFile, setSelectedFile] = useState(null)
   
   const fileInputRef = useRef(null)
+
+  const fetchLatestRequest = async () => {
+    setIsRequestLoading(true)
+    try {
+      const res = await roleRequestService.getMyRequest()
+      setLatestRequest(res.data || res)
+    } catch (err) {
+      console.error('Error fetching role request:', err)
+    } finally {
+      setIsRequestLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchLatestRequest()
+  }, [])
+
+  const handleRoleSuccess = async (updatedUser, accessToken, refreshToken) => {
+    if (updatedUser && accessToken && refreshToken) {
+      updateUser(updatedUser)
+      const { login: storeLogin } = useAuthStore.getState()
+      storeLogin(updatedUser, accessToken, refreshToken)
+    }
+    await fetchLatestRequest()
+  }
 
   // Profile Form Hook
   const {
@@ -199,13 +233,106 @@ export default function UserProfile() {
           <Shield className="w-4 h-4" />
           {t('profile.changePassword')}
         </button>
+        <button
+          onClick={() => setActiveTab('role')}
+          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-all ${
+            activeTab === 'role'
+              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+          }`}
+        >
+          <ArrowLeftRight className="w-4 h-4" />
+          Role & Permissions
+        </button>
       </div>
 
       {/* Tab Panels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main forms Panel (Left/Center) */}
         <div className="md:col-span-2 space-y-6">
-          {activeTab === 'profile' ? (
+          {activeTab === 'role' ? (
+            <div className="card p-6 space-y-6 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Role & Permissions</h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Manage permissions and request role changes</p>
+                </div>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="btn btn-primary flex items-center gap-2 py-2 px-4 text-xs font-bold"
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                  Switch Role
+                </button>
+              </div>
+
+              {/* Status banner */}
+              {latestRequest && latestRequest.status === 'pending' && (
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl flex gap-3 text-amber-800 dark:text-amber-300">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <div className="text-xs space-y-0.5 leading-normal">
+                    <p className="font-bold">Pending Request</p>
+                    <p>Your request to switch to <strong className="capitalize">{latestRequest.requestedRole.replace('_', ' ')}</strong> is pending review.</p>
+                    <p className="text-[10px] opacity-75 mt-1">Submitted on: {formattedDateTime(latestRequest.createdAt)}</p>
+                  </div>
+                </div>
+              )}
+
+              {latestRequest && latestRequest.status === 'rejected' && (
+                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 rounded-2xl flex gap-3 text-red-800 dark:text-red-300">
+                  <XCircle className="w-5 h-5 flex-shrink-0" />
+                  <div className="text-xs space-y-0.5 leading-normal">
+                    <p className="font-bold">Request Rejected</p>
+                    <p>Your request to switch to <strong className="capitalize">{latestRequest.requestedRole.replace('_', ' ')}</strong> was rejected.</p>
+                    <p className="italic mt-1">Reason: "{latestRequest.adminFeedback}"</p>
+                  </div>
+                </div>
+              )}
+
+              {latestRequest && latestRequest.status === 'approved' && (
+                <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200/50 dark:border-green-900/30 rounded-2xl flex gap-3 text-green-800 dark:text-green-300">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                  <div className="text-xs space-y-0.5 leading-normal">
+                    <p className="font-bold">Request Approved</p>
+                    <p>Your transition to <strong className="capitalize">{latestRequest.requestedRole.replace('_', ' ')}</strong> was approved.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Current Permissions Check list */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">Your Current System Privileges</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {[
+                    { key: 'canBookAppointment', label: 'Book Appointments' },
+                    { key: 'canManagePatients', label: 'Manage Patient Records' },
+                    { key: 'canManageInventory', label: 'Manage Medical Inventory' },
+                    { key: 'canViewReports', label: 'View Medical & Analytical Reports' },
+                    { key: 'canCreateReports', label: 'Create Facility Reports' },
+                    { key: 'canApproveReports', label: 'Approve System Reports' },
+                    { key: 'canViewAI', label: 'Access AI Forecasts & Insights' },
+                    { key: 'canManageCenter', label: 'Manage Health Center Facilities' },
+                    { key: 'canManageUsers', label: 'Manage Platform Users' },
+                    { key: 'canSystemSettings', label: 'Access Global System Settings' }
+                  ].map((perm) => (
+                    <div
+                      key={perm.key}
+                      className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${
+                        permissions[perm.key]
+                          ? 'border-green-150 bg-green-50/15 dark:bg-green-950/5 text-gray-800 dark:text-gray-200'
+                          : 'border-gray-100 dark:border-gray-850/80 bg-gray-50/20 dark:bg-gray-800/10 text-gray-455 opacity-60'
+                      }`}
+                    >
+                      <div className={`p-1 rounded-full ${permissions[perm.key] ? 'bg-green-100 dark:bg-green-950/40 text-green-500' : 'bg-gray-100 dark:bg-gray-750 text-gray-400'}`}>
+                        <Check className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-xs font-semibold">{perm.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'profile' ? (
             <div className="card p-6 space-y-6">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                 {t('profile.editProfile')}
@@ -444,6 +571,16 @@ export default function UserProfile() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isModalOpen && (
+          <RoleSwitchModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={handleRoleSuccess}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

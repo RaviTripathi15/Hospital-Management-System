@@ -120,6 +120,7 @@
     "aiInsights": "AI Insights",
     "administration": "Administration",
     "healthCenters": "Health Centers",
+    "roleRequests": "Role Requests",
     "userManagement": "User Management",
     "systemSettings": "System Settings",
     "profile": "Profile",
@@ -448,6 +449,8 @@
   "roles": {
     "super_admin": "Super Administrator",
     "district_admin": "District Administrator",
+    "phc_admin": "PHC Administrator",
+    "chc_admin": "CHC Administrator",
     "staff": "Health Staff",
     "doctor": "Doctor",
     "nurse": "Nurse",

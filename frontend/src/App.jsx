@@ -54,6 +54,7 @@ import AddHealthCenter from '@/pages/admin/AddHealthCenter'
 import UserManagement from '@/pages/admin/UserManagement'
 import SystemSettings from '@/pages/admin/SystemSettings'
 import BedManagement from '@/pages/admin/BedManagement'
+import RoleRequestsManager from '@/pages/admin/RoleRequestsManager'
 
 // Profile
 import UserProfile from '@/pages/profile/UserProfile'
@@ -79,7 +80,9 @@ function DashboardRouter() {
     case ROLES.DISTRICT_ADMIN: return <DistrictAdminDashboard />
     case ROLES.STAFF:
     case ROLES.DOCTOR:
-    case ROLES.NURSE: return <StaffDashboard />
+    case ROLES.NURSE:
+    case ROLES.PHC_ADMIN:
+    case ROLES.CHC_ADMIN: return <StaffDashboard />
     case ROLES.CITIZEN: return <CitizenDashboard />
     default: return <CitizenDashboard />
   }
@@ -167,6 +170,7 @@ export default function App() {
             <Route path="/admin/centers" element={<HealthCenterList />} />
             <Route path="/admin/centers/add" element={<AddHealthCenter />} />
             <Route path="/admin/centers/:id" element={<HealthCenterDetail />} />
+            <Route path="/admin/role-requests" element={<RoleRequestsManager />} />
           </Route>
 
           {/* Super Admin only */}

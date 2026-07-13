@@ -4,6 +4,8 @@
 const ROLES = Object.freeze({
   SUPER_ADMIN: 'super_admin',
   DISTRICT_ADMIN: 'district_admin',
+  PHC_ADMIN: 'phc_admin',
+  CHC_ADMIN: 'chc_admin',
   STAFF: 'staff',
   DOCTOR: 'doctor',
   NURSE: 'nurse',
@@ -11,7 +13,7 @@ const ROLES = Object.freeze({
 });
 
 // Role hierarchy — higher index = more privilege
-const ROLE_HIERARCHY = [ROLES.CITIZEN, ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN];
+const ROLE_HIERARCHY = [ROLES.CITIZEN, ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE, ROLES.PHC_ADMIN, ROLES.CHC_ADMIN, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN];
 
 // ─── Health Centre Types ──────────────────────────────────────────────────────
 const CENTER_TYPES = Object.freeze({

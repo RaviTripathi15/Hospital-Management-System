@@ -86,6 +86,13 @@ const uploadInventoryImage = multer({
   limits: { fileSize: MAX_FILE_SIZE },
 }).single('image');
 
+/** Verification document upload — single document */
+const uploadVerificationDoc = multer({
+  storage: createStorage('verifications'),
+  fileFilter: documentFilter,
+  limits: { fileSize: MAX_FILE_SIZE },
+}).single('verificationDoc');
+
 // ─── Multer Error Wrapper ─────────────────────────────────────────────────────
 /**
  * Wraps multer middleware so its errors are forwarded to Express error handler.
@@ -113,4 +120,5 @@ module.exports = {
   uploadPatientDocs: wrapMulter(uploadPatientDocs),
   uploadReportAttachment: wrapMulter(uploadReportAttachment),
   uploadInventoryImage: wrapMulter(uploadInventoryImage),
+  uploadVerificationDoc: wrapMulter(uploadVerificationDoc),
 };
