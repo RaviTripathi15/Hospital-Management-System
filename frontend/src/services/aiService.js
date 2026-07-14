@@ -30,6 +30,11 @@ const aiService = {
     const response = await api.get('/ai/anomalies', { params })
     return response.data
   },
+
+  chat: async (message, history = []) => {
+    const response = await api.post('/ai/chat', { message, history })
+    return response.data
+  },
 }
 
 export default aiService

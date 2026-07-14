@@ -50,3 +50,12 @@ exports.getAIInsights = asyncHandler(async (req, res, next) => {
   const insights = await aiService.generateInsights(centerId);
   return res.status(HTTP.OK).json(success(insights, 'AI insights generated.'));
 });
+
+// ─── @route POST /api/v1/ai/chat ─────────────────────────────────────────────
+exports.chatWithAI = asyncHandler(async (req, res, next) => {
+  const { message, history } = req.body;
+  if (!message) return next(new AppError('Message is required.', HTTP.BAD_REQUEST));
+
+  const response = await aiService.chatWithAI(message, history, req.user);
+  return res.status(HTTP.OK).json(success(response, 'AI response generated successfully.'));
+});

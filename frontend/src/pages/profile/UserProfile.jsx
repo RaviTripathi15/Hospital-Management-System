@@ -7,8 +7,9 @@ import authService from '@/services/authService'
 import roleRequestService from '@/services/roleRequestService'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useAuthStore } from '@/store/authStore'
+import { useUIStore } from '@/store/uiStore'
 import { changePasswordSchema } from '@/utils/validators'
-import { User, Phone, MapPin, Key, Upload, Shield, Eye, EyeOff, Loader2, Calendar, Building, LogIn, ArrowLeftRight, CheckCircle2, XCircle, AlertCircle, Check } from 'lucide-react'
+import { User, Phone, MapPin, Key, Upload, Shield, Eye, EyeOff, Loader2, Calendar, Building, LogIn, ArrowLeftRight, CheckCircle2, XCircle, AlertCircle, Check, Settings, Moon, Sun, Globe, Laptop, Smartphone, Lock, Link2, Activity } from 'lucide-react'
 import toast from 'react-hot-toast'
 import RoleSwitchModal from '@/components/common/RoleSwitchModal'
 import { AnimatePresence } from 'framer-motion'
@@ -29,6 +30,77 @@ export default function UserProfile() {
   const [selectedFile, setSelectedFile] = useState(null)
   
   const fileInputRef = useRef(null)
+
+  const { theme, toggleTheme } = useUIStore()
+
+  // Notification Preferences State (persisted locally)
+  const [notifPrefs, setNotifPrefs] = useState(() => {
+    const saved = localStorage.getItem(`notif_prefs_${user?.email || 'guest'}`)
+    return saved ? JSON.parse(saved) : { email: true, sms: true, push: true, digest: false }
+  })
+
+  // Privacy Settings State (persisted locally)
+  const [privacyPrefs, setPrivacyPrefs] = useState(() => {
+    const saved = localStorage.getItem(`privacy_prefs_${user?.email || 'guest'}`)
+    return saved ? JSON.parse(saved) : { publicProfile: false, researchShare: false, insuranceSync: false, tfa: false }
+  })
+
+  // Connected Devices State (persisted locally)
+  const [connectedDevices, setConnectedDevices] = useState(() => {
+    const saved = localStorage.getItem(`connected_devices_${user?.email || 'guest'}`)
+    return saved ? JSON.parse(saved) : [
+      { id: 'dev-1', name: 'Apple Watch Series 9', type: 'Smartwatch', status: 'Connected', lastSync: '5 mins ago' },
+      { id: 'dev-2', name: 'Omron BP7000 Smart Meter', type: 'Blood Pressure Monitor', status: 'Connected', lastSync: '1 hour ago' },
+      { id: 'dev-3', name: 'FreeStyle Libre Glucose Sensor', type: 'CGM Sensor', status: 'Disconnected', lastSync: '1 day ago' }
+    ]
+  })
+
+  const updateNotifPrefs = (key) => {
+    const updated = { ...notifPrefs, [key]: !notifPrefs[key] }
+    setNotifPrefs(updated)
+    localStorage.setItem(`notif_prefs_${user?.email || 'guest'}`, JSON.stringify(updated))
+  }
+
+  const updatePrivacyPrefs = (key) => {
+    const updated = { ...privacyPrefs, [key]: !privacyPrefs[key] }
+    setPrivacyPrefs(updated)
+    localStorage.setItem(`privacy_prefs_${user?.email || 'guest'}`, JSON.stringify(updated))
+  }
+
+  const handleDeviceAction = (id, action) => {
+    if (action === 'toggle') {
+      const updated = connectedDevices.map(d => d.id === id ? {
+        ...d,
+        status: d.status === 'Connected' ? 'Disconnected' : 'Connected',
+        lastSync: 'Just now'
+      } : d)
+      setConnectedDevices(updated)
+      localStorage.setItem(`connected_devices_${user?.email || 'guest'}`, JSON.stringify(updated))
+      toast.success('Device status updated successfully')
+    } else if (action === 'sync') {
+      const updated = connectedDevices.map(d => d.id === id ? { ...d, lastSync: 'Just now' } : d)
+      setConnectedDevices(updated)
+      localStorage.setItem(`connected_devices_${user?.email || 'guest'}`, JSON.stringify(updated))
+      toast.success('Sync complete')
+    }
+  }
+
+  const handlePairNewDevice = () => {
+    const name = window.prompt('Enter Device Name (e.g. Fitbit Charge 6, Dexcom G7):')
+    if (!name) return
+    const type = window.prompt('Enter Device Type (e.g. Activity Tracker, CGM):') || 'Health Tracker'
+    const newDevice = {
+      id: `dev-${Date.now()}`,
+      name,
+      type,
+      status: 'Connected',
+      lastSync: 'Just now'
+    }
+    const updated = [...connectedDevices, newDevice]
+    setConnectedDevices(updated)
+    localStorage.setItem(`connected_devices_${user?.email || 'guest'}`, JSON.stringify(updated))
+    toast.success('New medical device paired successfully')
+  }
 
   const fetchLatestRequest = async () => {
     setIsRequestLoading(true)
@@ -210,7 +282,7 @@ export default function UserProfile() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
+      <div className="flex border-b border-gray-200 dark:border-gray-700 flex-wrap">
         <button
           onClick={() => setActiveTab('profile')}
           className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-all ${
@@ -243,6 +315,17 @@ export default function UserProfile() {
         >
           <ArrowLeftRight className="w-4 h-4" />
           Role & Permissions
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-all ${
+            activeTab === 'settings'
+              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          Settings Preferences
         </button>
       </div>
 
@@ -429,6 +512,191 @@ export default function UserProfile() {
                   </button>
                 </div>
               </form>
+            </div>
+          ) : activeTab === 'settings' ? (
+            <div className="card p-6 space-y-6 animate-fadeIn">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Settings & Preferences</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Customize display languages, security privacy logs, and pair health sensors.</p>
+              </div>
+
+              {/* Theme & Language Selector */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-gray-150/40 dark:border-gray-700/50 pb-5">
+                <div className="p-4 bg-gray-50/50 dark:bg-gray-850/10 border border-gray-150/50 dark:border-gray-800/40 rounded-2xl space-y-3.5 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Interface Theme</h3>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-450 leading-relaxed mt-0.5">Toggle interface aesthetics between light and dark modes.</p>
+                  </div>
+                  <button
+                    onClick={toggleTheme}
+                    type="button"
+                    className="w-full py-2 px-4 bg-white dark:bg-gray-800 hover:bg-gray-50 text-gray-700 dark:text-gray-200 font-extrabold rounded-xl text-xs border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 shadow-sm"
+                  >
+                    {theme === 'dark' ? (
+                      <>
+                        <Sun className="w-4.5 h-4.5 text-amber-500 animate-spin-slow" />
+                        <span>Switch to Light Mode</span>
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="w-4.5 h-4.5 text-indigo-500" />
+                        <span>Switch to Dark Mode</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="p-4 bg-gray-50/50 dark:bg-gray-850/10 border border-gray-150/50 dark:border-gray-800/40 rounded-2xl space-y-3.5 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Language Selection</h3>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-455 leading-relaxed mt-0.5">Choose preferred localization for diagnostic cards & reports.</p>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                      <Globe className="w-4.5 h-4.5" />
+                    </span>
+                    <select
+                      value={i18n.language || 'en'}
+                      onChange={(e) => i18n.changeLanguage(e.target.value)}
+                      className="w-full input-field pl-9 pr-4 py-2 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl font-semibold cursor-pointer"
+                    >
+                      <option value="en">English (default)</option>
+                      <option value="hi">हिन्दी (Hindi)</option>
+                      <option value="mr">मराठी (Marathi)</option>
+                      <option value="ta">தமிழ் (Tamil)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notification Toggles */}
+              <div className="border-b border-gray-150/40 dark:border-gray-700/50 pb-5 space-y-3.5">
+                <div>
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Notification Channels</h3>
+                  <p className="text-[10px] text-gray-505 dark:text-gray-450 leading-relaxed mt-0.5">Configure priority routes for vital reminders and campaigns.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {[
+                    { key: 'email', label: 'Email Alerts', desc: 'Prescription refills & booking receipts' },
+                    { key: 'sms', label: 'SMS Reminders', desc: 'Critical vitals alerts & medicine schedules' },
+                    { key: 'push', label: 'Push Notifications', desc: 'Immediate emergency console responses' },
+                    { key: 'digest', label: 'Weekly Summary Digest', desc: 'Monthly health metrics trends analytical reports' }
+                  ].map(item => (
+                    <label
+                      key={item.key}
+                      className="flex items-center justify-between p-3.5 bg-gray-50/20 dark:bg-gray-850/5 border border-gray-150/40 dark:border-gray-800/25 rounded-2xl cursor-pointer select-none hover:border-gray-250 dark:hover:border-gray-750 transition-colors"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <span className="text-xs font-extrabold text-gray-900 dark:text-white block">{item.label}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-455 block mt-0.5">{item.desc}</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={notifPrefs[item.key]}
+                        onChange={() => updateNotifPrefs(item.key)}
+                        className="w-4.5 h-4.5 accent-primary-600 rounded shrink-0 cursor-pointer"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Privacy Settings */}
+              <div className="border-b border-gray-150/40 dark:border-gray-700/50 pb-5 space-y-3.5">
+                <div>
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Data Privacy & Security</h3>
+                  <p className="text-[10px] text-gray-550 dark:text-gray-455 leading-relaxed mt-0.5">Control access scopes of your personal medical history records.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {[
+                    { key: 'publicProfile', label: 'Public Profile Discovery', desc: 'Allow doctors to look up profile by name query' },
+                    { key: 'researchShare', label: 'Medical Research Program', desc: 'Share anonymous vitals with local epidemiological studies' },
+                    { key: 'insuranceSync', label: 'Insurance Data Share', desc: 'Sync health scores with empaneled insurance systems' },
+                    { key: 'tfa', label: 'Two-Factor Authentication (2FA)', desc: 'Request OTP verify token on every health portal login' }
+                  ].map(item => (
+                    <label
+                      key={item.key}
+                      className="flex items-center justify-between p-3.5 bg-gray-50/20 dark:bg-gray-850/5 border border-gray-150/40 dark:border-gray-800/25 rounded-2xl cursor-pointer select-none hover:border-gray-250 dark:hover:border-gray-700 transition-colors"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <span className="text-xs font-extrabold text-gray-900 dark:text-white block">{item.label}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-455 block mt-0.5">{item.desc}</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={privacyPrefs[item.key]}
+                        onChange={() => updatePrivacyPrefs(item.key)}
+                        className="w-4.5 h-4.5 accent-indigo-600 rounded shrink-0 cursor-pointer"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Connected Devices */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Connected Health Devices</h3>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-455 leading-relaxed mt-0.5">Pair wearable activity meters or BP monitors to sync vitals logs.</p>
+                  </div>
+                  <button
+                    onClick={handlePairNewDevice}
+                    type="button"
+                    className="py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-650 dark:bg-emerald-950/20 dark:text-emerald-450 border border-emerald-100/10 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer active:scale-95"
+                  >
+                    Pair Device
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {connectedDevices.map(dev => (
+                    <div
+                      key={dev.id}
+                      className="p-4 bg-gray-50/20 dark:bg-gray-850/5 border border-gray-150/45 dark:border-gray-800/25 rounded-2xl flex items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-550 dark:text-gray-400 shrink-0">
+                          {dev.type === 'Smartwatch' ? <Smartphone className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-extrabold text-gray-900 dark:text-white block">{dev.name}</span>
+                          <span className="text-[9px] text-gray-450 dark:text-gray-405 block mt-0.5">{dev.type} • Sync: {dev.lastSync}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "badge text-[8px] font-black px-2 py-0.5 rounded-full uppercase leading-none border shrink-0",
+                          dev.status === 'Connected'
+                            ? "bg-emerald-50 text-emerald-600 border-emerald-100/30 dark:bg-emerald-950/20 dark:text-emerald-400"
+                            : "bg-gray-50 text-gray-400 border-gray-100 dark:bg-gray-800 dark:text-gray-500"
+                        )}>
+                          {dev.status}
+                        </span>
+                        
+                        <button
+                          onClick={() => handleDeviceAction(dev.id, 'sync')}
+                          disabled={dev.status !== 'Connected'}
+                          type="button"
+                          className="py-1 px-2.5 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-250 font-bold rounded-lg text-[9px] uppercase tracking-wider transition-colors border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                        >
+                          Sync
+                        </button>
+                        
+                        <button
+                          onClick={() => handleDeviceAction(dev.id, 'toggle')}
+                          type="button"
+                          className="p-1 text-red-500 hover:text-red-750 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer active:scale-95"
+                          title={dev.status === 'Connected' ? 'Disconnect' : 'Connect'}
+                        >
+                          <Link2 className="w-4 h-4 rotate-45" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="card p-6 space-y-6">

@@ -5,7 +5,7 @@ const router = express.Router();
 
 const {
   getDemandForecast, getPredictedStockouts, getResourceOptimization,
-  getUnderperformingCenters, getAIInsights,
+  getUnderperformingCenters, getAIInsights, chatWithAI,
 } = require('../controllers/aiController');
 
 const { protect, requireMinRole } = require('../middleware/auth');
@@ -14,6 +14,7 @@ const { analyticsLimiter } = require('../middleware/rateLimiter');
 
 router.use(protect, analyticsLimiter);
 
+router.post('/chat', chatWithAI);
 router.get('/demand-forecast', requireMinRole(ROLES.STAFF), getDemandForecast);
 router.get('/predicted-stockouts', requireMinRole(ROLES.STAFF), getPredictedStockouts);
 router.get('/resource-optimization', requireMinRole(ROLES.DISTRICT_ADMIN), getResourceOptimization);

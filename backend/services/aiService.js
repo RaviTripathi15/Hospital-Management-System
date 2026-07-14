@@ -559,10 +559,317 @@ const generateInsights = async (centerId) => {
   }
 };
 
+/**
+ * Chat with AI Health Assistant
+ * Supports Gemini API with rule-based fallback.
+ *
+ * @param {string} message - Current user message.
+ * @param {Array} history - Conversational history.
+ * @param {object} user - Current user object.
+ * @returns {Promise<object>}
+ */
+const chatWithAI = async (message, history = [], user = null) => {
+  let patientProfile = null;
+  let activePrescriptions = [];
+  let nearbyCenters = [];
+
+  try {
+    if (user) {
+      // Find patient profiles associated with this user
+      patientProfile = await Patient.findOne({
+        $or: [{ userId: user._id }, { email: user.email }]
+      }).lean();
+
+      if (patientProfile && patientProfile.medicalHistory) {
+        patientProfile.medicalHistory.forEach(visit => {
+          if (visit.prescription && Array.isArray(visit.prescription)) {
+            activePrescriptions.push(...visit.prescription);
+          }
+        });
+      }
+
+      const userDistrict = user.district || (patientProfile && patientProfile.district);
+      if (userDistrict) {
+        nearbyCenters = await HealthCenter.find({
+          district: new RegExp(userDistrict, 'i'),
+          isActive: true
+        }).limit(3).lean();
+      }
+    }
+
+    if (nearbyCenters.length === 0) {
+      nearbyCenters = await HealthCenter.find({ isActive: true }).limit(3).lean();
+    }
+  } catch (dbErr) {
+    logger.error(`Error fetching database context for AI chat: ${dbErr.message}`);
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (apiKey) {
+    try {
+      const axios = require('axios');
+      
+      let systemInstructionText = `You are a professional AI Health Assistant for a digital healthcare management platform.
+Your job is to assist citizens with:
+1. Answering health questions.
+2. Symptom checking (analyze user symptoms, offer safety instructions, and highlight when they should seek urgent medical care).
+3. Providing medicine information (uses, general dosages, and precautions).
+4. Recommending nearby Primary Health Centers (PHCs) or Community Health Centers (CHCs).
+5. Giving healthy lifestyle tips.
+
+CRITICAL INSTRUCTIONS:
+- You are not a replacement for a doctor. Always include a short, standard disclaimer when advising on symptoms or medications.
+- Keep your answers concise, clear, reassuring, and highly structured (use bullet points or headers where helpful).
+- Answer in the same language or tone as the user.
+`;
+
+      if (user) {
+        systemInstructionText += `\nCurrentUser Context: Name is "${user.firstName || user.name || 'Citizen'}", role is "${user.role}".`;
+      }
+      if (patientProfile) {
+        systemInstructionText += `\nPatient Vitals: Weight=${patientProfile.weight}kg, Height=${patientProfile.height}cm, Blood Group="${patientProfile.bloodGroup}".`;
+      }
+      if (activePrescriptions.length > 0) {
+        const medsStr = activePrescriptions.map(p => `${p.medicine} (${p.dosage}, ${p.duration})`).join(', ');
+        systemInstructionText += `\nPatient's Active Prescriptions: ${medsStr}.`;
+      }
+      if (nearbyCenters.length > 0) {
+        const centersStr = nearbyCenters.map(c => `- ${c.name} (${c.type}) in block "${c.block}", district "${c.district}". Contact: ${c.contactNumber || 'N/A'}`).join('\n');
+        systemInstructionText += `\nNearby Health Centers Available:\n${centersStr}`;
+      }
+
+      const contents = [];
+      
+      if (Array.isArray(history)) {
+        history.forEach(msg => {
+          if (msg.sender && msg.text) {
+            contents.push({
+              role: msg.sender === 'user' ? 'user' : 'model',
+              parts: [{ text: msg.text }]
+            });
+          } else if (msg.role && msg.parts) {
+            contents.push(msg);
+          }
+        });
+      }
+      
+      contents.push({
+        role: 'user',
+        parts: [{ text: message }]
+      });
+
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          contents,
+          systemInstruction: {
+            parts: [{ text: systemInstructionText }]
+          }
+        },
+        { timeout: 10000 }
+      );
+
+      if (response.data && response.data.candidates && response.data.candidates[0]?.content?.parts[0]?.text) {
+        const reply = response.data.candidates[0].content.parts[0].text;
+        return {
+          reply,
+          source: 'gemini',
+          timestamp: new Date().toISOString()
+        };
+      }
+    } catch (apiErr) {
+      logger.warn(`Gemini API call failed, falling back to rule-based mock: ${apiErr.message}`);
+    }
+  }
+
+  const cleanMsg = message.toLowerCase();
+  let reply = '';
+
+  if (cleanMsg.includes('fever') || cleanMsg.includes('temp') || cleanMsg.includes('chills')) {
+    reply = `### 🤒 Symptom Checker: Fever & Temperature
+A fever is typically a sign that your body is fighting off an infection (viral or bacterial).
+
+**What to do:**
+1. **Stay Hydrated:** Drink plenty of fluids (water, oral rehydration solutions, clear broths).
+2. **Rest:** Avoid heavy physical exertion.
+3. **Monitor:** Check your temperature every 4-6 hours.
+4. **Medication:** Over-the-counter paracetamol can help reduce fever. Follow dosage guidelines carefully.
+
+**⚠️ Warning Signs (Consult a Doctor Immediately):**
+- Fever exceeds 103°F (39.4°C) or lasts more than 3 days.
+- Accompanied by severe headache, stiff neck, shortness of breath, or confusion.
+- In infants under 3 months, any temperature above 100.4°F (38°C) warrants immediate medical care.`;
+  }
+  else if (cleanMsg.includes('headache') || cleanMsg.includes('migraine')) {
+    reply = `### 🧠 Symptom Checker: Headaches
+Headaches are very common and can stem from multiple causes, including dehydration, stress, lack of sleep, eye strain, or sinus pressure.
+
+**What to do:**
+1. **Hydrate:** Drink a large glass of water, as dehydration is a primary trigger.
+2. **Rest:** Relax in a quiet, dark room. Apply a cool compress to your forehead.
+3. **Acupressure:** Gently massage your temples or the area between your thumb and index finger.
+
+**⚠️ Warning Signs (Emergency Care Required):**
+- A sudden, excruciating headache (often described as the "worst headache of your life").
+- Headache accompanied by fever, stiff neck, confusion, seizures, numbness, or difficulty speaking.
+- Headache after a recent head injury.`;
+  }
+  else if (cleanMsg.includes('cough') || cleanMsg.includes('cold') || cleanMsg.includes('flu') || cleanMsg.includes('sore throat')) {
+    reply = `### 🤧 Symptom Checker: Cough, Cold, & Throat Discomfort
+Most respiratory tract symptoms are viral and resolve on their own within 7-10 days.
+
+**What to do:**
+1. **Warm Liquids:** Drink herbal teas, warm water with honey and lemon, or clear soups to soothe the throat.
+2. **Steam Inhalation:** Inhale steam from a bowl of hot water or take a warm shower to relieve congestion.
+3. **Gargle:** Gargle with warm salt water (1/2 tsp salt in warm water) 3-4 times a day.
+
+**⚠️ Warning Signs (See a Doctor):**
+- Difficulty breathing, persistent wheezing, or chest pain.
+- Coughing up blood or thick rust-colored mucus.
+- Symptoms that worsen significantly after starting to improve, or persist beyond 10-14 days.`;
+  }
+  else if (cleanMsg.includes('stomach') || cleanMsg.includes('pain') || cleanMsg.includes('nausea') || cleanMsg.includes('diarrhea') || cleanMsg.includes('vomit')) {
+    reply = `### 🤢 Symptom Checker: Gastrointestinal Issues
+Stomach ache, nausea, vomiting, or diarrhea can be caused by food poisoning, viral gastroenteritis ("stomach flu"), or indigestion.
+
+**What to do:**
+1. **Sip Liquids:** Avoid large gulps. Drink small sips of water, dilute juices, or Oral Rehydration Salts (ORS) to prevent dehydration.
+2. **B.R.A.T. Diet:** When ready to eat, stick to bland foods: Bananas, Rice, Applesauce, and Toast.
+3. **Avoid Triggers:** Stay away from dairy, caffeine, alcohol, fatty foods, and highly seasoned dishes.
+
+**⚠️ Warning Signs (Seek Urgent Care):**
+- Severe, localized abdominal pain (especially in the lower right side, which could indicate appendicitis).
+- Inability to keep any liquids down for more than 12-24 hours.
+- High fever, blood in vomit or stools, or extreme dizziness and dry mouth (severe dehydration).`;
+  }
+  else if (cleanMsg.includes('paracetamol') || cleanMsg.includes('acetaminophen') || cleanMsg.includes('crocin') || cleanMsg.includes('dolo')) {
+    reply = `### 💊 Medicine Information: Paracetamol (Acetaminophen)
+Paracetamol is a widely used over-the-counter analgesic (pain reliever) and antipyretic (fever reducer).
+
+- **Common Uses:** Mild to moderate pain relief (headaches, muscle aches, toothaches, colds) and reducing fever.
+- **Standard Adult Dosage:** 500 mg to 1000 mg every 4 to 6 hours as needed.
+- **Maximum Limit:** **Do not exceed 4,000 mg (4g) within a 24-hour period.**
+- **Precautions:** Excess usage can cause severe liver damage. Avoid alcohol and check other cold medications to ensure they do not also contain paracetamol.`;
+  }
+  else if (cleanMsg.includes('metformin')) {
+    reply = `### 💊 Medicine Information: Metformin
+Metformin is a first-line oral medication used to manage blood sugar levels in people with Type 2 Diabetes.
+
+- **How it Works:** It improves insulin sensitivity and reduces the amount of glucose produced by the liver.
+- **Dosage Guidelines:** Always follow your physician's prescription. It is usually started at 500mg or 850mg once or twice daily, taken **with meals** to reduce stomach side effects.
+- **Precautions:** Avoid excessive alcohol intake while taking Metformin to minimize the rare risk of lactic acidosis. Monitor kidney function regularly.`;
+  }
+  else if (cleanMsg.includes('atorvastatin') || cleanMsg.includes('statin') || cleanMsg.includes('lipitor')) {
+    reply = `### 💊 Medicine Information: Atorvastatin
+Atorvastatin belongs to a class of drugs known as statins, used to lower cholesterol and reduce the risk of heart disease.
+
+- **Common Uses:** Lowering low-density lipoprotein (LDL) "bad" cholesterol and triglycerides, and raising high-density lipoprotein (HDL) "good" cholesterol.
+- **Dosage:** Typically taken once daily, usually in the evening. Dosages range from 10mg to 80mg depending on medical history.
+- **Precautions:** Inform your doctor immediately if you experience unexplained muscle pain, tenderness, or weakness. Avoid drinking large quantities of grapefruit juice.`;
+  }
+  else if (cleanMsg.includes('medicine') || cleanMsg.includes('drug') || cleanMsg.includes('prescription') || cleanMsg.includes('dosage')) {
+    if (activePrescriptions.length > 0) {
+      const listMeds = activePrescriptions.map((m, i) => `${i + 1}. **${m.medicine}**: Take ${m.dosage} for ${m.duration || 'specified duration'}`).join('\n');
+      reply = `### 📋 Your Active Prescriptions
+According to your health registry profile:
+${listMeds}
+
+*Remember to take your medications as directed by your healthcare provider. If you need a refill, you can request one directly using the 'Request Medication Refills' button on your dashboard.*`;
+    } else {
+      reply = `### 💊 General Medication Guidelines
+I can provide information on common medications like Paracetamol, Metformin, and Atorvastatin.
+
+**Key Safety Rules:**
+1. **Follow Prescriptions:** Never alter your dose or stop taking prescribed medication without consulting your doctor.
+2. **Read Labels:** Check ingredients, expiry dates, and dosage schedules.
+3. **Report Side Effects:** Talk to a clinician if you experience adverse effects.
+4. **Keep Registry Updated:** Ensure all prescriptions from health centers are logged into your electronic medical record.`;
+    }
+  }
+  else if (cleanMsg.includes('phc') || cleanMsg.includes('center') || cleanMsg.includes('clinic') || cleanMsg.includes('recommend') || cleanMsg.includes('hospital') || cleanMsg.includes('nearby')) {
+    if (nearbyCenters.length > 0) {
+      const centerList = nearbyCenters.map((c, i) => {
+        return `${i + 1}. **${c.name}** (${c.type})
+   - **Location:** Block: ${c.block}, District: ${c.district}
+   - **Contact:** ${c.contactNumber || 'No number listed'}
+   - **Beds Capacity:** ${c.bedCapacity || 0} beds`;
+      }).join('\n\n');
+      reply = `### 🏥 Recommended Nearest Health Centers
+Based on your current district preference and our active registry, we recommend the following clinics:
+
+${centerList}
+
+*You can view their doctor schedules, bed availability, and book an appointment directly through the "Find Nearby PHC" quick action on your dashboard.*`;
+    } else {
+      reply = `### 🏥 Health Center Recommendations
+I recommend visiting a Primary Health Center (PHC) for general consultations, routine immunizations, and preventative checkups.
+
+To locate one:
+1. Click **Find Nearby PHC** on your dashboard.
+2. Filter by your district and block to see active centers, doctor availability, and phone numbers.
+3. You can book an appointment online to skip the wait queue.`;
+    }
+  }
+  else if (cleanMsg.includes('tip') || cleanMsg.includes('advice') || cleanMsg.includes('health tips') || cleanMsg.includes('lifestyle')) {
+    const HEALTH_TIPS = [
+      "**Stay hydrated!** Aim for at least 8-10 glasses of water daily to support digestion, circulation, and temperature regulation.",
+      "**Get active!** A 30-minute daily walk can drastically improve cardiovascular health, mood, and sleep quality.",
+      "**Quality Sleep:** Ensure you get 7-8 hours of uninterrupted sleep each night to allow your body to heal and recover.",
+      "**Eat a Rainbow:** Include colorful vegetables in your meals. They are packed with antioxidants, vitamins, and dietary fiber.",
+      "**Mindfulness:** Practice deep breathing or meditation for 5 minutes daily to reduce stress levels and blood pressure.",
+      "**Screen Time Rest:** Protect your eyes with the 20-20-20 rule: every 20 minutes, look at something 20 feet away for 20 seconds."
+    ];
+    const randTip = HEALTH_TIPS[Math.floor(Math.random() * HEALTH_TIPS.length)];
+    reply = `### 💡 Curated AI Health Tip
+Here is a health tip to keep you thriving:
+
+${randTip}
+
+*Small daily habits yield massive health benefits over time. Keep logging your vitals on your dashboard to see your health score rise!*`;
+  }
+  else if (cleanMsg.includes('symptom') || cleanMsg.includes('check')) {
+    reply = `### 🩺 Symptom Checker Guidance
+I can help check simple symptoms. Please describe what you are feeling. For example, ask me about:
+- **"I have a fever"**
+- **"My head is hurting"**
+- **"I have a cough and throat irritation"**
+- **"My stomach feels upset"**
+
+*Disclaimer: This is for educational guidance. If you feel very unwell, please visit your nearest PHC or call emergency services at 108 immediately.*`;
+  }
+  else if (cleanMsg.includes('hello') || cleanMsg.includes('hi') || cleanMsg.includes('hey') || cleanMsg.includes('greet')) {
+    const greetingName = user ? (user.firstName || user.name || 'Citizen') : 'Citizen';
+    reply = `Hello, **${greetingName}**! I am your AI Health Assistant. 
+
+How can I support your wellness journey today? Feel free to ask me about:
+- **Symptoms:** "What should I do for a sore throat?"
+- **Medicines:** "Tell me about Metformin."
+- **Nearby Clinics:** "Where is the nearest PHC?"
+- **Daily Tips:** "Give me some healthy advice."`;
+  } else {
+    reply = `I've received your query: *"hl"*
+
+I am prepared for full integration with your backend LLM model. Since the API is running in fallback mode, I can provide detailed guidance on:
+- **Symptoms** (e.g. fever, headache, cough, stomach pain)
+- **Medicines** (e.g. Paracetamol, Metformin, Atorvastatin)
+- **Clinic Locations** (Primary and Community Health Centers in your district)
+- **Health Tips** (daily wellness advice)
+
+Could you rephrase your question focusing on one of these areas, or ask a specific medical question?`;
+  }
+
+  return {
+    reply,
+    source: 'mock',
+    timestamp: new Date().toISOString()
+  };
+};
+
 module.exports = {
   demandForecast,
   predictStockouts,
   resourceOptimization,
   detectUnderperformingCenters,
   generateInsights,
+  chatWithAI,
 };
