@@ -15,6 +15,7 @@ import { useNotificationStore } from '@/store/notificationStore'
 import appointmentService from '@/services/appointmentService'
 import reportService from '@/services/reportService'
 import healthCenterService from '@/services/healthCenterService'
+import patientService from '@/services/patientService'
 import SkeletonLoader from '@/components/ui/SkeletonLoader'
 import FeedbackOverlay from '@/components/ui/FeedbackOverlay'
 import { cn } from '@/utils/cn'
@@ -112,13 +113,23 @@ export default function CitizenDashboard() {
       try {
         setLoading(true)
         const appointmentsRes = await appointmentService.getMyAppointments().catch(() => ({ appointments: [] }))
-        const reportsRes = await reportService.getAll().catch(() => ({ reports: [] }))
+        const patientProfilesRes = await patientService.getMyProfile().catch(() => ({ data: [] }))
         const centersRes = await healthCenterService.getAll().catch(() => ({ healthCenters: [] }))
 
         // Extract list fields safely depending on API formats
         const appointmentsList = appointmentsRes.appointments || appointmentsRes.data || appointmentsRes || []
-        const reportsList = reportsRes.reports || reportsRes.data || reportsRes || []
         const centersList = centersRes.healthCenters || centersRes.data || centersRes || []
+
+        // Aggregate medical history visits across all patient profiles linked to user's phone
+        const profiles = patientProfilesRes.data || patientProfilesRes || []
+        const reportsList = []
+        if (Array.isArray(profiles)) {
+          profiles.forEach(profile => {
+            if (profile.medicalHistory && Array.isArray(profile.medicalHistory)) {
+              reportsList.push(...profile.medicalHistory)
+            }
+          })
+        }
 
         setApiData({
           appointments: appointmentsList,

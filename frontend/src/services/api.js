@@ -118,6 +118,22 @@ api.interceptors.response.use(
     // ── Other HTTP errors ──────────────────────────────────────────────────
     if (error.response?.status === 403) {
       toast.error('Access denied. You do not have permission to do that.')
+      let allowedRoles = []
+      const msg = error.response?.data?.message || ''
+      if (msg.includes('Required role(s):')) {
+        const rolesPart = msg.split('Required role(s):')[1] || ''
+        allowedRoles = rolesPart.split(',').map(r => r.trim().replace(/\.$/, ''))
+      } else if (msg.includes('Minimum required role:')) {
+        const minRole = (msg.split('Minimum required role:')[1] || '').trim().replace(/\.$/, '')
+        const ROLES_LIST = ['citizen', 'staff', 'doctor', 'nurse', 'phc_admin', 'chc_admin', 'district_admin', 'super_admin']
+        const minIdx = ROLES_LIST.indexOf(minRole)
+        if (minIdx !== -1) {
+          allowedRoles = ROLES_LIST.slice(minIdx)
+        }
+      }
+      setTimeout(() => {
+        window.location.href = `/unauthorized?allowedRoles=${encodeURIComponent(JSON.stringify(allowedRoles))}`
+      }, 1000)
     } else if (error.response?.status === 404) {
       // 404s are handled per-component; do not show a global toast
     } else if (error.response?.status === 429) {

@@ -6,6 +6,7 @@ const router = express.Router();
 const {
   getAllAppointments, getAppointmentById, createAppointment, updateAppointment,
   cancelAppointment, getAppointmentsByCenter, getAppointmentsByDoctor, getTodayAppointments,
+  getMyAppointments,
 } = require('../controllers/appointmentController');
 
 const { protect, requireMinRole, requireAnyRole } = require('../middleware/auth');
@@ -18,6 +19,7 @@ router.get('/today', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUP
 router.get('/center/:centerId', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), paginationValidator, getAppointmentsByCenter);
 router.get('/doctor/:doctorId', requireAnyRole(ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), paginationValidator, getAppointmentsByDoctor);
 
+router.get('/my', requireMinRole(ROLES.CITIZEN), paginationValidator, getMyAppointments);
 router.get('/', requireMinRole(ROLES.CITIZEN), paginationValidator, getAllAppointments);
 router.post('/', requireAnyRole(ROLES.CITIZEN, ROLES.STAFF, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN), createAppointmentValidator, createAppointment);
 

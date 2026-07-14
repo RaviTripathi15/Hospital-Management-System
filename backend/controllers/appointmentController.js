@@ -283,6 +283,36 @@ exports.getTodayAppointments = asyncHandler(async (req, res) => {
   return res.status(HTTP.OK).json(success(appointments, "Today's appointments retrieved."));
 });
 
+// ─── @route GET /api/v1/appointments/my ───────────────────────────────────────
+exports.getMyAppointments = asyncHandler(async (req, res) => {
+  const { page, limit, skip } = getPaginationParams(req.query);
+
+  let filter = {};
+  if (req.user.role === ROLES.CITIZEN) {
+    filter.createdBy = req.user._id;
+  } else if (req.user.role === ROLES.DOCTOR) {
+    filter.doctor = req.user._id;
+  } else if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
+    filter.healthCenter = req.user.healthCenter;
+  } else {
+    filter.createdBy = req.user._id;
+  }
+
+  const [appointments, total] = await Promise.all([
+    Appointment.find(filter)
+      .populate('patient', 'name patientId phone')
+      .populate('healthCenter', 'name district')
+      .populate('doctor', 'name')
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Appointment.countDocuments(filter),
+  ]);
+
+  return res.status(HTTP.OK).json(paginated(appointments, { page, limit, total }, 'My appointments retrieved.'));
+});
+
 // ─── Helper ───────────────────────────────────────────────────────────────────
 const buildFilter = (req) => {
   const filter = {};

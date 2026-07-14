@@ -12,8 +12,18 @@ export default function Unauthorized() {
   const location = useLocation()
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Extract allowed roles passed from ProtectedRoute
-  const requiredRoles = location.state?.allowedRoles || []
+  // Extract allowed roles passed from ProtectedRoute or URL search query parameters
+  const getRolesFromQuery = () => {
+    try {
+      const searchParams = new URLSearchParams(location.search)
+      const allowedRolesQuery = searchParams.get('allowedRoles')
+      return allowedRolesQuery ? JSON.parse(decodeURIComponent(allowedRolesQuery)) : []
+    } catch (e) {
+      console.error('Error parsing allowedRoles query param:', e)
+      return []
+    }
+  }
+  const requiredRoles = location.state?.allowedRoles || getRolesFromQuery()
 
   // Helper to format role name for display
   const formatRole = (role) => {
