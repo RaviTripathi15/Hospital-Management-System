@@ -73,7 +73,9 @@ export default function CitizenDashboard() {
     appointments: [],
     reports: [],
     centersCount: 0,
-    medicinesCount: 2 // Default mock count for medicines due
+    medicinesCount: 2, // Default mock count for medicines due
+    profiles: [],
+    centers: []
   })
 
   // Live Digital Clock & Rotating Tips
@@ -136,7 +138,9 @@ export default function CitizenDashboard() {
           appointments: appointmentsList,
           reports: reportsList,
           centersCount: centersList.length || 12,
-          medicinesCount: 2
+          medicinesCount: 2,
+          profiles: profiles,
+          centers: centersList
         })
       } catch (err) {
         console.error("Error fetching dashboard statistics", err)
@@ -243,6 +247,16 @@ export default function CitizenDashboard() {
     const status = app.status ? app.status.toLowerCase() : 'scheduled'
     return status === 'scheduled' || status === 'confirmed' || status === 'pending'
   })
+
+  // Dynamic calculations for cards
+  const activeProfile = apiData.profiles && apiData.profiles[0]
+
+  const getActivePrescriptions = () => {
+    if (!apiData.reports || apiData.reports.length === 0) return []
+    const latestPrescriptionVisit = apiData.reports.find(visit => visit.prescription && visit.prescription.length > 0)
+    return latestPrescriptionVisit ? latestPrescriptionVisit.prescription : []
+  }
+  const activePrescriptions = getActivePrescriptions()
 
   // Format greeting based on hours
   const getGreeting = () => {
@@ -505,38 +519,318 @@ export default function CitizenDashboard() {
         </div>
       </div>
 
-      {/* Statistics Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
-        {[
-          { label: 'Upcoming Appointments', value: upcomingAppointments.length, icon: Calendar, color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-          { label: 'Total Medical Records', value: apiData.reports.length, icon: FileText, color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' },
-          { label: 'Available Health Centers', value: apiData.centersCount, icon: Building2, color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450' },
-          { label: 'Notifications Alerts', value: unreadCount, icon: Bell, color: 'bg-amber-500/10 text-amber-600 dark:text-amber-450' },
-          { label: 'Medicines Due Now', value: apiData.medicinesCount, icon: Pill, color: 'bg-red-500/10 text-red-650 dark:text-red-400' },
-          { label: 'Overall Health Score', value: `${healthScore}/100`, icon: Activity, color: 'bg-teal-500/10 text-teal-600 dark:text-teal-405', isScore: true }
-        ].map((stat, i) => (
-          <motion.div
-            key={i}
-            whileHover={{ y: -3 }}
-            className="card p-5 bg-white dark:bg-gray-800 border border-gray-150/60 dark:border-gray-700/60 flex flex-col justify-between min-h-[125px] relative overflow-hidden"
-          >
-            {stat.isScore && (
-              <div className="absolute -bottom-4 -right-4 w-16 h-16 rounded-full bg-teal-500/5 blur-md" />
-            )}
+      {/* Interactive Health Console Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        {/* Card 1: Upcoming Appointments */}
+        <motion.div
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between min-h-[175px] relative overflow-hidden group animate-fade-in"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+          <div>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider max-w-[80%] leading-tight">{stat.label}</span>
-              <div className={cn("p-2 rounded-xl flex-shrink-0", stat.color)}>
-                <stat.icon className="w-4 h-4" />
+              <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-md">Appointments</span>
+              <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
+                <Calendar className="w-5 h-5" />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-gray-900 dark:text-white leading-none">{stat.value}</span>
-              {stat.isScore && (
-                <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-450 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-md">Healthy</span>
+            <div className="mt-4">
+              {upcomingAppointments.length > 0 ? (
+                (() => {
+                  const nextAppt = upcomingAppointments[0];
+                  return (
+                    <div className="space-y-1">
+                      <p className="text-sm font-extrabold text-gray-900 dark:text-white line-clamp-1">
+                        {nextAppt.doctor?.name ? `Dr. ${nextAppt.doctor.name}` : nextAppt.doctorName || 'General OPD'}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {nextAppt.healthCenter?.name || 'Primary Clinic'}
+                      </p>
+                      <p className="text-xs font-bold text-blue-600 dark:text-blue-450 bg-blue-50 dark:bg-blue-950/40 inline-block px-2 py-0.5 rounded-md mt-1">
+                        {new Date(nextAppt.date).toLocaleDateString([], { month: 'short', day: 'numeric' })} at {nextAppt.timeSlot}
+                      </p>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-sm font-extrabold text-gray-400 dark:text-gray-500 italic">No scheduled visits</p>
+                  <p className="text-xs text-gray-400">Need a medical checkup or consultation?</p>
+                </div>
               )}
             </div>
-          </motion.div>
-        ))}
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center text-xs">
+            <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">{upcomingAppointments.length} upcoming</span>
+            <button
+              onClick={() => navigate('/appointments/book')}
+              className="text-primary-600 hover:text-primary-750 dark:text-primary-450 font-extrabold hover:underline cursor-pointer"
+            >
+              + Book Visit
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Card 2: Medical Reports */}
+        <motion.div
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between min-h-[175px] relative overflow-hidden group animate-fade-in"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2 py-0.5 rounded-md">Medical Records</span>
+              <div className="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                <FileText className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              {apiData.reports.length > 0 ? (
+                (() => {
+                  const latestReport = apiData.reports[0];
+                  return (
+                    <div className="space-y-1">
+                      <p className="text-sm font-extrabold text-gray-900 dark:text-white line-clamp-1">
+                        Diagnosis: {latestReport.diagnosis || 'OPD Consultation'}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {latestReport.healthCenter?.name || 'Clinic Visit'}
+                      </p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                        Last visited: {new Date(latestReport.visitDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-sm font-extrabold text-gray-400 dark:text-gray-500 italic">No health history records</p>
+                  <p className="text-xs text-gray-400">Your registered visits will display here.</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center text-xs">
+            <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">{apiData.reports.length} visits total</span>
+            <button
+              onClick={() => {
+                if (apiData.reports.length > 0) {
+                  setFeedback({ isOpen: true, type: 'success', title: 'Downloads Started', message: 'Compiling and downloading your health reports.' })
+                } else {
+                  setFeedback({ isOpen: true, type: 'error', title: 'No Records', message: 'You do not have any digital medical records to download.' })
+                }
+              }}
+              className="text-indigo-600 hover:text-indigo-750 dark:text-indigo-400 font-extrabold hover:underline cursor-pointer"
+            >
+              Download PDF
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Card 3: Active Prescriptions */}
+        <motion.div
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between min-h-[175px] relative overflow-hidden group animate-fade-in"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-red-600 dark:text-red-400 uppercase tracking-widest bg-red-500/10 px-2 py-0.5 rounded-md">Prescriptions</span>
+              <div className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl">
+                <Pill className="w-5 h-5 animate-pulse" />
+              </div>
+            </div>
+            <div className="mt-4">
+              {activePrescriptions.length > 0 ? (
+                <div className="space-y-1.5 max-h-[70px] overflow-y-auto pr-1">
+                  {activePrescriptions.slice(0, 2).map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-gray-800 dark:text-gray-200 line-clamp-1">{item.medicine}</span>
+                      <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/60 px-1.5 py-0.5 rounded text-center">{item.dosage}</span>
+                    </div>
+                  ))}
+                  {activePrescriptions.length > 2 && (
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider text-right">+{activePrescriptions.length - 2} more medicines</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-sm font-extrabold text-emerald-550 dark:text-emerald-450 italic flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+                    No active prescriptions
+                  </p>
+                  <p className="text-xs text-gray-400">All medications completed or none active.</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center text-xs">
+            <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">{activePrescriptions.length} items total</span>
+            <span className="text-red-550 dark:text-red-450 font-bold text-[10px]">Follow dosage</span>
+          </div>
+        </motion.div>
+
+        {/* Card 4: Nearby PHCs */}
+        <motion.div
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between min-h-[175px] relative overflow-hidden group animate-fade-in"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-md">Nearby PHCs</span>
+              <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 rounded-xl">
+                <Building2 className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-4">
+              {apiData.centers && apiData.centers.length > 0 ? (
+                <div className="space-y-2">
+                  {apiData.centers.slice(0, 2).map((center, idx) => (
+                    <div key={idx} className="flex justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{center.name}</p>
+                        <p className="text-[10px] text-gray-450 dark:text-gray-500 truncate">{center.district} district • {center.type}</p>
+                      </div>
+                      {center.contactNumber && (
+                        <a
+                          href={`tel:${center.contactNumber}`}
+                          className="p-1 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-[10px] font-bold shrink-0 transition-colors"
+                        >
+                          Call
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-sm font-extrabold text-gray-400 dark:text-gray-500 italic">No health centers listed</p>
+                  <p className="text-xs text-gray-400">Search for centers in the navigation options.</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center text-xs">
+            <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">{apiData.centersCount} centers active</span>
+            <button
+              onClick={() => navigate('/admin/centers')}
+              className="text-emerald-600 hover:text-emerald-750 dark:text-emerald-400 font-extrabold hover:underline cursor-pointer"
+            >
+              See All Centers
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Card 5: Notifications & Alerts */}
+        <motion.div
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between min-h-[175px] relative overflow-hidden group animate-fade-in"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-450 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-md">Alerts & Info</span>
+              <div className="relative p-2 bg-amber-500/10 text-amber-650 dark:text-amber-450 rounded-xl">
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-800 animate-pulse" />
+                )}
+              </div>
+            </div>
+            <div className="mt-4">
+              {notifications && notifications.length > 0 ? (
+                <div className="space-y-2">
+                  {notifications.slice(0, 2).map((item, idx) => (
+                    <div key={idx} className="flex gap-2 items-start text-xs min-w-0">
+                      <span className="w-1.5 h-1.5 bg-amber-450 rounded-full mt-1.5 shrink-0" />
+                      <p className="font-semibold text-gray-700 dark:text-gray-300 line-clamp-2 leading-tight">
+                        {item.title}: <span className="font-normal text-gray-500 dark:text-gray-400">{item.message}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-sm font-extrabold text-gray-400 dark:text-gray-500 italic">No new notifications</p>
+                  <p className="text-xs text-gray-400">You are all caught up for the day!</p>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center text-xs">
+            <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">{unreadCount} unread alerts</span>
+            <span className="text-amber-600 dark:text-amber-400 font-bold text-[10px]">Realtime updates</span>
+          </div>
+        </motion.div>
+
+        {/* Card 6: Emergency Contacts */}
+        <motion.div
+          whileHover={{ y: -4, scale: 1.01 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl p-5 border border-red-200/50 dark:border-red-900/30 shadow-soft flex flex-col justify-between min-h-[175px] relative overflow-hidden group animate-fade-in"
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-red-600/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-red-600 dark:text-red-400 uppercase tracking-widest bg-red-500/10 px-2 py-0.5 rounded-md">Emergency Info</span>
+              <div className="p-2 bg-red-500/10 text-red-650 dark:text-red-400 rounded-xl">
+                <PhoneCall className="w-5 h-5 text-red-600 dark:text-red-450" />
+              </div>
+            </div>
+            <div className="mt-4">
+              {activeProfile?.emergencyContact?.name ? (
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-gray-505 dark:text-gray-400 uppercase tracking-wider">Designated Guardian</p>
+                  <p className="text-sm font-extrabold text-gray-900 dark:text-white leading-none">
+                    {activeProfile.emergencyContact.name} ({activeProfile.emergencyContact.relation || 'Relation'})
+                  </p>
+                  <a
+                    href={`tel:${activeProfile.emergencyContact.phone}`}
+                    className="inline-flex items-center gap-1.5 text-xs text-red-650 dark:text-red-450 font-extrabold mt-1.5 bg-red-50 dark:bg-red-950/20 px-2 py-1 rounded-xl hover:bg-red-100 transition-colors"
+                  >
+                    <PhoneCall className="w-3 h-3" />
+                    Call: {activeProfile.emergencyContact.phone}
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-400 font-bold leading-tight">No private emergency guardian set in profile.</p>
+                  <div className="flex gap-2">
+                    <a
+                      href="tel:108"
+                      className="flex-1 py-1.5 text-center bg-red-600 text-white rounded-lg text-[10px] font-bold hover:bg-red-700 transition-colors"
+                    >
+                      Ambulance (108)
+                    </a>
+                    <a
+                      href="tel:102"
+                      className="flex-1 py-1.5 text-center bg-indigo-650 text-white rounded-lg text-[10px] font-bold hover:bg-indigo-700 transition-colors"
+                    >
+                      Dispatch (102)
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center text-xs">
+            <span className="text-red-550 dark:text-red-400 font-bold uppercase tracking-wider text-[9px] animate-pulse">Hotline Active</span>
+            <button
+              onClick={() => setFeedback({ isOpen: true, type: 'error', title: 'Emergency Dispatch', message: 'For medical evacuation call 108. For national medical queries call 102. Available 24/7!' })}
+              className="text-red-600 hover:text-red-750 dark:text-red-400 font-extrabold hover:underline cursor-pointer"
+            >
+              Info Hotlines
+            </button>
+          </div>
+        </motion.div>
+
       </div>
 
       {/* Vitals Overview & Charts Section */}
