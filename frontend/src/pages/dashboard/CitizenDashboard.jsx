@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Calendar, FileText, Building2, Bell, Pill, Activity, Plus, PhoneCall,
-  Heart, Download, User, ArrowRight, ClipboardList, Info, HelpCircle
+  Heart, Download, User, ArrowRight, ClipboardList, Info, HelpCircle,
+  Sparkles, Clock
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -251,6 +252,13 @@ export default function CitizenDashboard() {
     return 'Good Evening'
   }
 
+  const getHealthStatus = (score) => {
+    if (score >= 90) return { label: 'Optimal', desc: 'Excellent vitals', color: 'bg-emerald-500/20 text-emerald-450 border-emerald-500/30' }
+    if (score >= 80) return { label: 'Good Status', desc: 'Normal health range', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' }
+    if (score >= 70) return { label: 'Fair Baseline', desc: 'Slight deviations', color: 'bg-amber-500/20 text-amber-500 border-amber-500/30' }
+    return { label: 'Attention Due', desc: 'Checkups recommended', color: 'bg-red-500/20 text-red-500 border-red-500/30' }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -284,107 +292,216 @@ export default function CitizenDashboard() {
       {/* Top Welcome Panel & Quick Actions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Welcome Card */}
-        <div className="lg:col-span-7 bg-gradient-to-r from-primary-600 to-blue-700 dark:from-primary-750 dark:to-blue-900 rounded-3xl p-6 md:p-8 text-white relative overflow-hidden shadow-elevated flex flex-col justify-between min-h-[220px]">
-          {/* Subtle Background Art */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
-
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
+        {/* Welcome Card & AI Tip of the Day (Left - spans lg:col-span-8) */}
+        <div className="lg:col-span-8 bg-gradient-to-br from-indigo-900 via-slate-950 to-blue-950 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-950 rounded-3xl p-6 md:p-8 text-white relative overflow-hidden shadow-elevated border border-indigo-500/10 flex flex-col justify-between min-h-[260px] animate-fade-in">
+          {/* Glowing background shapes */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/15 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '6s' }} />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full -ml-16 -mb-16 blur-2xl pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row justify-between gap-6">
+            <div className="space-y-4 md:max-w-[65%]">
               <div>
-                <p className="text-white/85 text-xs font-bold uppercase tracking-wider">
-                  Patient Portal
-                </p>
-                <h1 className="text-2xl md:text-3xl font-extrabold mt-1 tracking-tight">
-                  {getGreeting()}, {user?.firstName || 'Valued Citizen'}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 dark:bg-slate-900/30 backdrop-blur-md rounded-full border border-white/10 text-emerald-350 dark:text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider mb-3">
+                  <Sparkles className="w-3 h-3 text-emerald-450 animate-bounce" />
+                  Health Platform Active
+                </div>
+                <h1 className="text-2xl md:text-3.5xl font-black mt-1 tracking-tight bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
+                  {getGreeting()}, {user?.name ? user.name.split(' ')[0] : 'Valued Citizen'}
                 </h1>
+                <p className="text-sm text-white/75 mt-1 font-medium">
+                  Welcome to your digital health dashboard.
+                </p>
               </div>
-              {/* Digital live clock */}
-              <div className="text-right">
-                <p className="text-lg md:text-xl font-bold font-mono tracking-wide leading-none">
-                  {liveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </p>
-                <p className="text-[10px] text-white/80 mt-1 font-medium">
-                  {liveTime.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
-                </p>
+
+              {/* AI Health Tip Box */}
+              <div className="bg-white/5 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl p-4 border border-white/10 dark:border-white/5 relative overflow-hidden group shadow-soft hover:border-white/15 transition-all duration-300">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform" />
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-emerald-500/20 text-emerald-350 rounded-xl">
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-extrabold text-emerald-350 dark:text-emerald-400 uppercase tracking-widest">AI Health Tip of the Day</span>
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    </div>
+                    <p className="text-xs text-white/90 leading-relaxed mt-1 font-medium italic">
+                      "{HEALTH_TIPS[tipIndex]}"
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Health Tip Box */}
-            <div className="mt-6 flex items-start gap-3 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-              <Info className="w-5 h-5 text-emerald-350 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-bold text-emerald-350 dark:text-emerald-400 uppercase tracking-wider">Daily Health Tip</p>
-                <p className="text-xs text-white/90 leading-relaxed mt-0.5 font-medium">{HEALTH_TIPS[tipIndex]}</p>
+            {/* Live Clock & Date Column */}
+            <div className="flex flex-row md:flex-col justify-between md:justify-start items-center md:items-end gap-3 bg-white/5 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl md:rounded-none p-4 md:p-0 border border-white/10 md:border-none md:self-start md:text-right min-w-[180px] md:min-w-0">
+              <div className="flex items-center gap-1.5 text-white/90">
+                <Clock className="w-4 h-4 text-indigo-400" />
+                <span className="text-xs font-bold tracking-wider uppercase">Live Clock</span>
+              </div>
+              <div className="mt-1">
+                <p className="text-2xl md:text-3xl font-extrabold font-mono tracking-widest text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)] leading-none">
+                  {liveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                </p>
+                <p className="text-[11px] text-white/70 mt-2 font-bold uppercase tracking-wider">
+                  {liveTime.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="relative z-10 flex gap-4 mt-6">
+          {/* Banner Action Buttons */}
+          <div className="relative z-10 flex gap-3.5 mt-6 border-t border-white/10 pt-4 flex-wrap">
             <button
               onClick={() => setShowVitalsModal(true)}
-              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20 active:scale-95 flex items-center gap-1.5"
+              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/25 active:scale-95 flex items-center gap-2 group cursor-pointer"
             >
-              <Activity className="w-3.5 h-3.5" />
+              <Activity className="w-4 h-4 group-hover:rotate-12 transition-transform" />
               Update Vitals
             </button>
             <button
               onClick={() => navigate('/profile')}
-              className="px-4 py-2 bg-white/15 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 transition-all active:scale-95 flex items-center gap-1.5"
+              className="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-bold border border-white/15 transition-all active:scale-95 flex items-center gap-2 group cursor-pointer"
             >
-              <User className="w-3.5 h-3.5" />
+              <User className="w-4 h-4 group-hover:scale-110 transition-transform" />
               View Profile
             </button>
           </div>
         </div>
 
-        {/* Quick Actions Panel */}
-        <div className="lg:col-span-5 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between">
+        {/* Health Score Card (Right - spans lg:col-span-4) */}
+        {(() => {
+          const status = getHealthStatus(healthScore);
+          return (
+            <div className="lg:col-span-4 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between min-h-[260px] relative overflow-hidden group">
+              {/* Glow overlay */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/10 transition-colors duration-500" />
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-red-500 animate-pulse" />
+                    Overall Health
+                  </h2>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Calculated from recent vitals.</p>
+                </div>
+                <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border tracking-wider", status.color)}>
+                  {status.label}
+                </span>
+              </div>
+
+              {/* SVG Circular Progress Gauge & Score Display */}
+              <div className="my-4 flex items-center justify-center gap-6">
+                <div className="relative w-28 h-28 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    {/* Track Circle */}
+                    <circle
+                      className="text-gray-100 dark:text-gray-700/40"
+                      strokeWidth="9"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r="38"
+                      cx="50"
+                      cy="50"
+                    />
+                    {/* Fill Circle */}
+                    <circle
+                      className="text-primary-500 transition-all duration-1000 ease-out"
+                      strokeWidth="9"
+                      strokeDasharray={2 * Math.PI * 38}
+                      strokeDashoffset={2 * Math.PI * 38 * (1 - healthScore / 100)}
+                      strokeLinecap="round"
+                      stroke="url(#healthScoreCircularGradient)"
+                      fill="transparent"
+                      r="38"
+                      cx="50"
+                      cy="50"
+                    />
+                    <defs>
+                      <linearGradient id="healthScoreCircularGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#10b981" /> {/* Emerald */}
+                        <stop offset="50%" stopColor="#3b82f6" /> {/* Blue */}
+                        <stop offset="100%" stopColor="#6366f1" /> {/* Indigo */}
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-black text-gray-900 dark:text-white leading-none tracking-tighter">{healthScore}</span>
+                    <span className="text-[9px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mt-1">/100</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">BMI: <strong className="font-extrabold text-gray-900 dark:text-white">{bmi}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">BP: <strong className="font-extrabold text-gray-900 dark:text-white">{vitals.sys}/{vitals.dia}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Pulse: <strong className="font-extrabold text-gray-900 dark:text-white">{vitals.pulse}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/50 pt-3">
+                {status.desc} — keep tracking to maintain updates.
+              </div>
+            </div>
+          );
+        })()}
+
+      </div>
+
+      {/* Quick Actions Card Block (Full width or split) */}
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft">
+        <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-primary-500" />
               Quick Actions
             </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Access core health services and updates instantly.
             </p>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5 mt-5">
-            {[
-              { label: 'Book Appointment', icon: Calendar, color: 'text-primary-600 bg-primary-50 dark:bg-primary-950/30 dark:text-primary-400 border-primary-100/50 dark:border-primary-900/30', path: '/appointments/book' },
-              { label: 'Find Nearby PHC', icon: Building2, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-450 border-emerald-100/50 dark:border-emerald-900/30', path: '/admin/centers' },
-              { label: 'Medical Records', icon: FileText, color: 'text-indigo-650 bg-indigo-50 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-100/50 dark:border-indigo-900/30', path: '/reports' },
-              { label: 'Emergency Line', icon: PhoneCall, color: 'text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border-red-100/50 dark:border-red-900/30', action: 'emergency' },
-              { label: 'Download Reports', icon: Download, color: 'text-blue-650 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 border-blue-100/50 dark:border-blue-900/30', action: 'download' },
-              { label: 'Update Profile', icon: User, color: 'text-amber-650 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-450 border-amber-100/50 dark:border-amber-900/30', path: '/profile' }
-            ].map((action, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  if (action.path) navigate(action.path)
-                  else if (action.action === 'emergency') {
-                    // Triggers the emergency alert modal in MainLayout or directly local feedback
-                    setFeedback({ isOpen: true, type: 'error', title: 'Emergency Hotlines', message: 'National Dispatch: dial 108. Ambulance: dial 102. Reach out immediately!' })
-                  } else if (action.action === 'download') {
-                    if (apiData.reports.length === 0) {
-                      setFeedback({ isOpen: true, type: 'error', title: 'No Reports Found', message: 'You have no medical reports available for download at this time.' })
-                    } else {
-                      setFeedback({ isOpen: true, type: 'success', title: 'Downloads Started', message: 'The compilation of your digital health reports is downloading.' })
-                    }
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {[
+            { label: 'Book Appointment', icon: Calendar, color: 'text-primary-600 bg-primary-50 dark:bg-primary-950/30 dark:text-primary-400 border-primary-100/50 dark:border-primary-900/30', path: '/appointments/book' },
+            { label: 'Find Nearby PHC', icon: Building2, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-450 border-emerald-100/50 dark:border-emerald-900/30', path: '/admin/centers' },
+            { label: 'Medical Records', icon: FileText, color: 'text-indigo-650 bg-indigo-50 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-100/50 dark:border-indigo-900/30', path: '/reports' },
+            { label: 'Emergency Line', icon: PhoneCall, color: 'text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border-red-100/50 dark:border-red-900/30', action: 'emergency' },
+            { label: 'Download Reports', icon: Download, color: 'text-blue-650 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 border-blue-100/50 dark:border-blue-900/30', action: 'download' },
+            { label: 'Update Profile', icon: User, color: 'text-amber-650 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-450 border-amber-100/50 dark:border-amber-900/30', path: '/profile' }
+          ].map((action, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                if (action.path) navigate(action.path)
+                else if (action.action === 'emergency') {
+                  setFeedback({ isOpen: true, type: 'error', title: 'Emergency Hotlines', message: 'National Dispatch: dial 108. Ambulance: dial 102. Reach out immediately!' })
+                } else if (action.action === 'download') {
+                  if (apiData.reports.length === 0) {
+                    setFeedback({ isOpen: true, type: 'error', title: 'No Reports Found', message: 'You have no medical reports available for download at this time.' })
+                  } else {
+                    setFeedback({ isOpen: true, type: 'success', title: 'Downloads Started', message: 'The compilation of your digital health reports is downloading.' })
                   }
-                }}
-                className={cn(
-                  "p-3 rounded-2xl border flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-soft active:scale-95 group cursor-pointer",
-                  action.color
-                )}
-              >
-                <action.icon className="w-5.5 h-5.5 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-[10px] font-bold leading-tight">{action.label}</span>
-              </button>
-            ))}
-          </div>
+                }
+              }}
+              className={cn(
+                "p-4.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-soft active:scale-95 group cursor-pointer",
+                action.color
+              )}
+            >
+              <action.icon className="w-6 h-6 mb-2.5 group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] font-bold leading-tight uppercase tracking-wider">{action.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
