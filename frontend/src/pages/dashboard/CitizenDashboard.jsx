@@ -67,6 +67,16 @@ export default function CitizenDashboard() {
     localStorage.setItem(`local_profiles_${user?.email || 'guest'}`, JSON.stringify(updatedList))
   }
 
+  // API Fetched States
+  const [apiData, setApiData] = useState({
+    appointments: [],
+    reports: [],
+    centersCount: 0,
+    medicinesCount: 2, // Default mock count for medicines due
+    profiles: [],
+    centers: []
+  })
+
   // Determine currently selected patient profile
   const activeProfile = apiData.profiles?.find(p => p._id === activeProfileId) 
     || localProfiles.find(p => p._id === activeProfileId)
@@ -97,16 +107,6 @@ export default function CitizenDashboard() {
     dia: 80,
     pulse: 72,
     spo2: 98
-  })
-
-  // API Fetched States
-  const [apiData, setApiData] = useState({
-    appointments: [],
-    reports: [],
-    centersCount: 0,
-    medicinesCount: 2, // Default mock count for medicines due
-    profiles: [],
-    centers: []
   })
 
   // Live Digital Clock & Rotating Tips
