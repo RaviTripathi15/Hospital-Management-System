@@ -24,6 +24,11 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { initCronJobs } = require('./jobs/cronJobs');
 
+// Security middleware imports
+const nosqlSanitizer = require('./middleware/nosqlSanitizer');
+const { protect } = require('./middleware/auth');
+const uploadAccessControl = require('./middleware/uploadAccessControl');
+
 // Route imports
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -160,6 +165,7 @@ app.options('*', cors(corsOptions));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(nosqlSanitizer);
 
 // HTTP request logging  (skip in test mode to keep jest output clean)
 if (process.env.NODE_ENV !== 'test') {
@@ -171,8 +177,14 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // ─── Static Files ─────────────────────────────────────────────────────────────
-// Serve uploaded files (profile pics, reports, etc.)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve public uploads statically
+app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles')));
+app.use('/uploads/inventory', express.static(path.join(__dirname, 'uploads/inventory')));
+
+// Protect sensitive uploads via middleware route
+app.use('/uploads/verifications', protect, uploadAccessControl('verifications'), express.static(path.join(__dirname, 'uploads/verifications')));
+app.use('/uploads/reports', protect, uploadAccessControl('reports'), express.static(path.join(__dirname, 'uploads/reports')));
+app.use('/uploads/patients', protect, uploadAccessControl('patients'), express.static(path.join(__dirname, 'uploads/patients')));
 
 // ─── Global Rate Limiting ─────────────────────────────────────────────────────
 // Applied to all /api/* paths.  The limiter itself also has trustProxy configured.

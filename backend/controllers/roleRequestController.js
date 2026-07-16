@@ -103,6 +103,13 @@ exports.getRequests = asyncHandler(async (req, res) => {
     query.status = statusFilter;
   }
 
+  // Filter requests by user's district if logged in as district_admin
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const usersInDistrict = await User.find({ district: req.user.district }).select('_id');
+    const userIds = usersInDistrict.map((u) => u._id);
+    query.user = { $in: userIds };
+  }
+
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
   const skip = (page - 1) * limit;
@@ -146,6 +153,11 @@ exports.approveRequest = asyncHandler(async (req, res, next) => {
     return next(new AppError('User not found.', HTTP.NOT_FOUND));
   }
 
+  // District Admin restriction: check target user's district
+  if (req.user.role === ROLES.DISTRICT_ADMIN && targetUser.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only approve requests for users in your district.', HTTP.FORBIDDEN));
+  }
+
   // Update User Role
   targetUser.role = request.requestedRole;
   await targetUser.save({ validateBeforeSave: false });
@@ -187,6 +199,16 @@ exports.rejectRequest = asyncHandler(async (req, res, next) => {
 
   if (request.status !== 'pending') {
     return next(new AppError(`Request has already been ${request.status}.`, HTTP.BAD_REQUEST));
+  }
+
+  const targetUser = await User.findById(request.user);
+  if (!targetUser) {
+    return next(new AppError('User not found.', HTTP.NOT_FOUND));
+  }
+
+  // District Admin restriction: check target user's district
+  if (req.user.role === ROLES.DISTRICT_ADMIN && targetUser.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only reject requests for users in your district.', HTTP.FORBIDDEN));
   }
 
   // Update request status

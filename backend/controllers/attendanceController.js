@@ -17,6 +17,20 @@ exports.markAttendance = asyncHandler(async (req, res, next) => {
     return next(new AppError('Health center is required.', HTTP.BAD_REQUEST));
   }
 
+  // Access checks
+  if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role)) {
+    if (req.user.healthCenter?.toString() !== healthCenter.toString()) {
+      return next(new AppError('You can only mark attendance at your assigned health centre.', HTTP.FORBIDDEN));
+    }
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const HealthCenter = require('../models/HealthCenter');
+    const center = await HealthCenter.findById(healthCenter);
+    if (!center || center.district !== req.user.district) {
+      return next(new AppError('You can only mark attendance in your district.', HTTP.FORBIDDEN));
+    }
+  }
+
   const record = await upsertDailyAttendance({
     doctorId: req.user._id,
     healthCenterId: healthCenter,
@@ -38,11 +52,25 @@ exports.getAttendanceRecords = asyncHandler(async (req, res, next) => {
   const { doctorId, healthCenterId, startDate, endDate } = req.query;
   const canViewAll = [ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN].includes(req.user.role);
 
-  if (!canViewAll && doctorId) {
+  if (!canViewAll && doctorId && doctorId !== req.user._id.toString()) {
     return next(new AppError('You cannot view other doctors attendance.', HTTP.FORBIDDEN));
   }
 
-  const filterHealthCenter = canViewAll ? healthCenterId || req.query.healthCenter : req.user.healthCenter;
+  let filterHealthCenter = canViewAll ? healthCenterId || req.query.healthCenter : req.user.healthCenter;
+
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const HealthCenter = require('../models/HealthCenter');
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    const centerIds = centers.map((c) => c._id);
+    if (filterHealthCenter) {
+      if (!centerIds.map((id) => id.toString()).includes(filterHealthCenter.toString())) {
+        return next(new AppError('Access denied. Facility is not in your district.', HTTP.FORBIDDEN));
+      }
+    } else {
+      filterHealthCenter = { $in: centerIds };
+    }
+  }
+
   const isSelfRole = [ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role);
   const records = await getAttendanceRecords({
     doctorId: doctorId || (isSelfRole ? req.user._id : null),
@@ -58,11 +86,25 @@ exports.getMonthlyReport = asyncHandler(async (req, res, next) => {
   const { doctorId, healthCenterId, month } = req.query;
   const canViewAll = [ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN].includes(req.user.role);
 
-  if (!canViewAll && doctorId) {
+  if (!canViewAll && doctorId && doctorId !== req.user._id.toString()) {
     return next(new AppError('You cannot view other doctors attendance.', HTTP.FORBIDDEN));
   }
 
-  const filterHealthCenter = canViewAll ? healthCenterId || req.query.healthCenter : req.user.healthCenter;
+  let filterHealthCenter = canViewAll ? healthCenterId || req.query.healthCenter : req.user.healthCenter;
+
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const HealthCenter = require('../models/HealthCenter');
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    const centerIds = centers.map((c) => c._id);
+    if (filterHealthCenter) {
+      if (!centerIds.map((id) => id.toString()).includes(filterHealthCenter.toString())) {
+        return next(new AppError('Access denied. Facility is not in your district.', HTTP.FORBIDDEN));
+      }
+    } else {
+      filterHealthCenter = { $in: centerIds };
+    }
+  }
+
   const isSelfRole = [ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role);
   const report = await getMonthlyAttendance({
     doctorId: doctorId || (isSelfRole ? req.user._id : null),

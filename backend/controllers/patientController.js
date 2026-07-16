@@ -12,7 +12,7 @@ const { HTTP, ROLES, NOTIFICATION_TYPES } = require('../config/constants');
 // ─── @route GET /api/v1/patients ─────────────────────────────────────────────
 exports.getAllPatients = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPaginationParams(req.query);
-  const filter = buildPatientFilter(req);
+  const filter = await buildPatientFilter(req);
 
   const [patients, total] = await Promise.all([
     Patient.find(filter)
@@ -38,6 +38,15 @@ exports.getPatientById = asyncHandler(async (req, res, next) => {
     .populate('medicalHistory.healthCenter', 'name');
 
   if (!patient) return next(new AppError('Patient not found.', HTTP.NOT_FOUND));
+
+  // Role and center checks
+  if (req.user.role === ROLES.STAFF && patient.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only view patients at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && patient.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only view patients in your district.', HTTP.FORBIDDEN));
+  }
+
   return res.status(HTTP.OK).json(success(patient, 'Patient retrieved.'));
 });
 
@@ -47,6 +56,14 @@ exports.registerPatient = asyncHandler(async (req, res, next) => {
 
   const center = await HealthCenter.findById(centerId);
   if (!center) return next(new AppError('Health centre not found.', HTTP.NOT_FOUND));
+
+  // Role and center checks
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('You can only register patients at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('You can only register patients in your district.', HTTP.FORBIDDEN));
+  }
 
   // Generate unique patient ID
   const patientId = await generatePatientId(center.district, center.block);
@@ -79,12 +96,16 @@ exports.registerPatient = asyncHandler(async (req, res, next) => {
 
 // ─── @route PUT /api/v1/patients/:id ─────────────────────────────────────────
 exports.updatePatient = asyncHandler(async (req, res, next) => {
-  const patient = await Patient.findById(req.params.id);
+  const patient = await Patient.findById(req.params.id).populate('healthCenter');
   if (!patient) return next(new AppError('Patient not found.', HTTP.NOT_FOUND));
 
   // Staff can only update patients in their centre
-  if (req.user.role === ROLES.STAFF && patient.healthCenter.toString() !== req.user.healthCenter?.toString()) {
+  if (req.user.role === ROLES.STAFF && patient.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
     return next(new AppError('You can only update patients at your health centre.', HTTP.FORBIDDEN));
+  }
+  // District admin can only update patients in their district
+  if (req.user.role === ROLES.DISTRICT_ADMIN && patient.healthCenter?.district !== req.user.district) {
+    return next(new AppError('You can only update patients in your district.', HTTP.FORBIDDEN));
   }
 
   const disallowed = ['patientId', 'registeredBy', 'medicalHistory'];
@@ -102,6 +123,17 @@ exports.updatePatient = asyncHandler(async (req, res, next) => {
 exports.addVisit = asyncHandler(async (req, res, next) => {
   const patient = await Patient.findById(req.params.id);
   if (!patient) return next(new AppError('Patient not found.', HTTP.NOT_FOUND));
+
+  // Access check
+  if (req.user.role === ROLES.STAFF && patient.healthCenter?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only record visits for patients at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const center = await HealthCenter.findById(patient.healthCenter);
+    if (!center || center.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only record visits for patients in your district.', HTTP.FORBIDDEN));
+    }
+  }
 
   const visit = {
     ...req.body,
@@ -125,9 +157,18 @@ exports.getPatientHistory = asyncHandler(async (req, res, next) => {
   const patient = await Patient.findById(req.params.id)
     .populate('medicalHistory.doctor', 'name')
     .populate('medicalHistory.healthCenter', 'name')
-    .select('medicalHistory name patientId');
+    .populate('healthCenter', 'district')
+    .select('medicalHistory name patientId healthCenter');
 
   if (!patient) return next(new AppError('Patient not found.', HTTP.NOT_FOUND));
+
+  // Access check
+  if (req.user.role === ROLES.STAFF && patient.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only view medical history of patients at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && patient.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only view medical history of patients in your district.', HTTP.FORBIDDEN));
+  }
 
   // Manual pagination on embedded array (sorted newest first)
   const sorted = [...patient.medicalHistory].sort((a, b) => b.visitDate - a.visitDate);
@@ -158,6 +199,9 @@ exports.searchPatient = asyncHandler(async (req, res) => {
   // Scope to centre/district based on role
   if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
     filter.healthCenter = req.user.healthCenter;
+  } else if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    filter.healthCenter = { $in: centers.map(c => c._id) };
   }
 
   const patients = await Patient.find(filter)
@@ -170,8 +214,20 @@ exports.searchPatient = asyncHandler(async (req, res) => {
 });
 
 // ─── @route GET /api/v1/patients/center/:centerId ────────────────────────────
-exports.getPatientsByCenter = asyncHandler(async (req, res) => {
+exports.getPatientsByCenter = asyncHandler(async (req, res, next) => {
   const { page, limit, skip } = getPaginationParams(req.query);
+
+  // Access check
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== req.params.centerId) {
+    return next(new AppError('Access denied. You can only view patients at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const center = await HealthCenter.findById(req.params.centerId);
+    if (!center || center.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only view patients in your district.', HTTP.FORBIDDEN));
+    }
+  }
+
   const filter = { healthCenter: req.params.centerId, isActive: true };
 
   const [patients, total] = await Promise.all([
@@ -188,7 +244,7 @@ exports.getPatientsByCenter = asyncHandler(async (req, res) => {
 });
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
-const buildPatientFilter = (req) => {
+const buildPatientFilter = async (req) => {
   const filter = { isActive: true };
   const { healthCenter, gender, bloodGroup, search } = req.query;
 
@@ -206,8 +262,15 @@ const buildPatientFilter = (req) => {
   if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
     filter.healthCenter = req.user.healthCenter;
   } else if (req.user.role === ROLES.DISTRICT_ADMIN) {
-    // Only filter by district via a join — apply via healthCenter lookup
-    // For simplicity, let district admin query across; front-end filters by center
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    const centerIds = centers.map((c) => c._id);
+    if (healthCenter) {
+      if (!centerIds.map((id) => id.toString()).includes(healthCenter.toString())) {
+        filter.healthCenter = null; // force empty
+      }
+    } else {
+      filter.healthCenter = { $in: centerIds };
+    }
   }
 
   return filter;

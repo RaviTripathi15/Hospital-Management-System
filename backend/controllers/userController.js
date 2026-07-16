@@ -29,16 +29,32 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
 // ─── @route GET /api/v1/users/:id ────────────────────────────────────────────
 exports.getUserById = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.params.id)
-    .populate('healthCenter', 'name district type block')
-    .lean();
+    .populate('healthCenter', 'name district type block');
 
   if (!user) return next(new AppError('User not found.', HTTP.NOT_FOUND));
-  return res.status(HTTP.OK).json(success(user, 'User retrieved.'));
+
+  // Check permissions
+  if (req.user.role === ROLES.STAFF && user.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only view users of your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && user.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only view users in your district.', HTTP.FORBIDDEN));
+  }
+
+  return res.status(HTTP.OK).json(success(user.toPublic(), 'User retrieved.'));
 });
 
 // ─── @route POST /api/v1/users ────────────────────────────────────────────────
 exports.createUser = asyncHandler(async (req, res, next) => {
   const { name, email, password, role, phone, district, healthCenter } = req.body;
+
+  // District Admin restriction: check target district
+  if (req.user.role === ROLES.DISTRICT_ADMIN && district !== req.user.district) {
+    return next(new AppError('You can only create users in your district.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.STAFF) {
+    return next(new AppError('You do not have permission to create users.', HTTP.FORBIDDEN));
+  }
 
   // Enforce role hierarchy — cannot create a user with higher role than yourself
   const callerRank = ROLE_HIERARCHY.indexOf(req.user.role);
@@ -67,6 +83,34 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
     return next(new AppError('You cannot modify a user with equal or higher privileges.', HTTP.FORBIDDEN));
   }
 
+  // District Admin restriction: check target user's district and caller's district
+  if (req.user.role === ROLES.DISTRICT_ADMIN && user.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only modify users in your district.', HTTP.FORBIDDEN));
+  }
+  // Staff restriction: check target user's healthCenter
+  if (req.user.role === ROLES.STAFF && user._id.toString() !== req.user._id.toString()) {
+    return next(new AppError('Access denied. You can only modify your own profile.', HTTP.FORBIDDEN));
+  }
+
+  // If not super admin, restrict changing district, healthCenter, role, isActive
+  if (req.user.role !== ROLES.SUPER_ADMIN) {
+    const isSelf = req.user._id.toString() === user._id.toString();
+    if (isSelf) {
+      delete req.body.district;
+      delete req.body.healthCenter;
+      delete req.body.isActive;
+    } else {
+      if (req.user.role === ROLES.STAFF) {
+        return next(new AppError('Access denied. Staff cannot modify other users.', HTTP.FORBIDDEN));
+      }
+      if (req.user.role === ROLES.DISTRICT_ADMIN) {
+        if (req.body.district && req.body.district !== req.user.district) {
+          return next(new AppError('You cannot move users outside your district.', HTTP.FORBIDDEN));
+        }
+      }
+    }
+  }
+
   const allowedUpdates = ['name', 'phone', 'district', 'healthCenter', 'gender', 'isActive'];
   const updates = {};
   allowedUpdates.forEach((field) => {
@@ -92,6 +136,11 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
     return next(new AppError('You cannot delete your own account.', HTTP.BAD_REQUEST));
   }
 
+  // District Admin restriction: check target user's district
+  if (req.user.role === ROLES.DISTRICT_ADMIN && user.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only delete users in your district.', HTTP.FORBIDDEN));
+  }
+
   const targetRank = ROLE_HIERARCHY.indexOf(user.role);
   const callerRank = ROLE_HIERARCHY.indexOf(req.user.role);
   if (targetRank >= callerRank && req.user.role !== ROLES.SUPER_ADMIN) {
@@ -113,6 +162,11 @@ exports.updateUserRole = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.params.id);
   if (!user) return next(new AppError('User not found.', HTTP.NOT_FOUND));
 
+  // District Admin restriction: check target user's district
+  if (req.user.role === ROLES.DISTRICT_ADMIN && user.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only update user roles in your district.', HTTP.FORBIDDEN));
+  }
+
   const newRank = ROLE_HIERARCHY.indexOf(role);
   const callerRank = ROLE_HIERARCHY.indexOf(req.user.role);
   if (newRank >= callerRank && req.user.role !== ROLES.SUPER_ADMIN) {
@@ -129,6 +183,18 @@ exports.updateUserRole = asyncHandler(async (req, res, next) => {
 exports.getUsersByCenter = asyncHandler(async (req, res, next) => {
   const { centerId } = req.params;
   const { page, limit, skip } = getPaginationParams(req.query);
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('Access denied. You can only view users of your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const HealthCenter = require('../models/HealthCenter');
+    const center = await HealthCenter.findById(centerId);
+    if (!center || center.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only view users in your district.', HTTP.FORBIDDEN));
+    }
+  }
 
   const filter = { healthCenter: centerId, isActive: true };
   const [users, total] = await Promise.all([

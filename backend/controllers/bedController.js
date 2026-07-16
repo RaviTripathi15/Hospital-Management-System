@@ -22,6 +22,9 @@ exports.allocateBed = asyncHandler(async (req, res, next) => {
   if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
     return next(new AppError('You are not authorized to allocate beds at this facility.', HTTP.FORBIDDEN));
   }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('You are not authorized to allocate beds outside your district.', HTTP.FORBIDDEN));
+  }
 
   // 2. Verify patient exists and is active
   const patient = await Patient.findById(patientId);
@@ -79,9 +82,15 @@ exports.releaseBed = asyncHandler(async (req, res, next) => {
     return next(new AppError('This bed allocation is already released.', HTTP.BAD_REQUEST));
   }
 
+  const center = await HealthCenter.findById(allocation.healthCenter);
+  if (!center) return next(new AppError('Health center not found.', HTTP.NOT_FOUND));
+
   // Access check
   if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== allocation.healthCenter.toString()) {
     return next(new AppError('You are not authorized to release beds at this facility.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('You are not authorized to release beds outside your district.', HTTP.FORBIDDEN));
   }
 
   // Update allocation record
@@ -90,11 +99,8 @@ exports.releaseBed = asyncHandler(async (req, res, next) => {
   await allocation.save();
 
   // Increment available beds in Health Center
-  const center = await HealthCenter.findById(allocation.healthCenter);
-  if (center) {
-    center.availableBeds = Math.min(center.totalBeds, center.availableBeds + 1);
-    await center.save();
-  }
+  center.availableBeds = Math.min(center.totalBeds, center.availableBeds + 1);
+  await center.save();
 
   return res.status(HTTP.OK).json(success(allocation, 'Bed released successfully.'));
 });
@@ -103,6 +109,17 @@ exports.releaseBed = asyncHandler(async (req, res, next) => {
 exports.getActiveAllocations = asyncHandler(async (req, res, next) => {
   const centerId = req.query.healthCenter || (req.user.healthCenter ? req.user.healthCenter.toString() : null);
   if (!centerId) return next(new AppError('Health center ID is required.', HTTP.BAD_REQUEST));
+
+  const center = await HealthCenter.findById(centerId);
+  if (!center) return next(new AppError('Health center not found.', HTTP.NOT_FOUND));
+
+  // Access check
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('Access denied. You can only view bed information for your own facility.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only view bed information in your district.', HTTP.FORBIDDEN));
+  }
 
   const { page, limit, skip } = getPaginationParams(req.query);
   const filter = { healthCenter: centerId, status: 'allocated' };
@@ -125,6 +142,17 @@ exports.getHistory = asyncHandler(async (req, res, next) => {
   const centerId = req.query.healthCenter || (req.user.healthCenter ? req.user.healthCenter.toString() : null);
   if (!centerId) return next(new AppError('Health center ID is required.', HTTP.BAD_REQUEST));
 
+  const center = await HealthCenter.findById(centerId);
+  if (!center) return next(new AppError('Health center not found.', HTTP.NOT_FOUND));
+
+  // Access check
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('Access denied. You can only view bed information for your own facility.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only view bed information in your district.', HTTP.FORBIDDEN));
+  }
+
   const { page, limit, skip } = getPaginationParams(req.query);
   const filter = { healthCenter: centerId, status: 'released' };
 
@@ -146,8 +174,16 @@ exports.getBedStats = asyncHandler(async (req, res, next) => {
   const centerId = req.query.healthCenter || (req.user.healthCenter ? req.user.healthCenter.toString() : null);
   if (!centerId) return next(new AppError('Health center ID is required.', HTTP.BAD_REQUEST));
 
-  const center = await HealthCenter.findById(centerId).select('name totalBeds availableBeds');
+  const center = await HealthCenter.findById(centerId).select('name totalBeds availableBeds district');
   if (!center) return next(new AppError('Health center not found.', HTTP.NOT_FOUND));
+
+  // Access check
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('Access denied. You can only view bed information for your own facility.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only view bed information in your district.', HTTP.FORBIDDEN));
+  }
 
   const occupiedBeds = center.totalBeds - center.availableBeds;
   const occupancyRate = center.totalBeds > 0 ? Math.round((occupiedBeds / center.totalBeds) * 100) : 0;

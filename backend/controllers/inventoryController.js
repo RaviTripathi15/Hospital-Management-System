@@ -11,7 +11,7 @@ const { HTTP, ROLES, NOTIFICATION_TYPES, THRESHOLDS } = require('../config/const
 // ─── @route GET /api/v1/inventory ────────────────────────────────────────────
 exports.getAllItems = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPaginationParams(req.query);
-  const filter = buildInventoryFilter(req);
+  const filter = await buildInventoryFilter(req);
 
   const [items, total] = await Promise.all([
     Inventory.find(filter)
@@ -33,6 +33,15 @@ exports.getItemById = asyncHandler(async (req, res, next) => {
     .populate('restockHistory.performedBy', 'name');
 
   if (!item) return next(new AppError('Inventory item not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && item.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only view inventory of your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && item.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only view inventory in your district.', HTTP.FORBIDDEN));
+  }
+
   return res.status(HTTP.OK).json(success(item, 'Item retrieved.'));
 });
 
@@ -42,6 +51,14 @@ exports.addItem = asyncHandler(async (req, res, next) => {
 
   const center = await HealthCenter.findById(centerId);
   if (!center) return next(new AppError('Health centre not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('You can only add inventory items to your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('You can only add inventory items to health centres in your district.', HTTP.FORBIDDEN));
+  }
 
   // Prevent duplicate itemCode per centre
   if (itemCode) {
@@ -59,8 +76,16 @@ exports.addItem = asyncHandler(async (req, res, next) => {
 
 // ─── @route PUT /api/v1/inventory/:id ────────────────────────────────────────
 exports.updateItem = asyncHandler(async (req, res, next) => {
-  const item = await Inventory.findById(req.params.id);
+  const item = await Inventory.findById(req.params.id).populate('healthCenter');
   if (!item) return next(new AppError('Inventory item not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && item.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('You can only update inventory items at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && item.healthCenter?.district !== req.user.district) {
+    return next(new AppError('You can only update inventory items in your district.', HTTP.FORBIDDEN));
+  }
 
   const disallowed = ['healthCenter', 'itemCode', 'restockHistory'];
   disallowed.forEach((f) => delete req.body[f]);
@@ -75,8 +100,13 @@ exports.updateItem = asyncHandler(async (req, res, next) => {
 
 // ─── @route DELETE /api/v1/inventory/:id ─────────────────────────────────────
 exports.deleteItem = asyncHandler(async (req, res, next) => {
-  const item = await Inventory.findById(req.params.id);
+  const item = await Inventory.findById(req.params.id).populate('healthCenter');
   if (!item) return next(new AppError('Inventory item not found.', HTTP.NOT_FOUND));
+
+  // Access check for district admins
+  if (req.user.role === ROLES.DISTRICT_ADMIN && item.healthCenter?.district !== req.user.district) {
+    return next(new AppError('You can only delete inventory items in your district.', HTTP.FORBIDDEN));
+  }
 
   await Inventory.findByIdAndUpdate(req.params.id, { isActive: false });
   return res.status(HTTP.OK).json(success(null, 'Item deactivated.'));
@@ -87,8 +117,16 @@ exports.updateStock = asyncHandler(async (req, res, next) => {
   const { quantity, operation, batchNumber, expiryDate, supplier, unitCost, notes } = req.body;
   const qty = parseInt(quantity, 10);
 
-  const item = await Inventory.findById(req.params.id);
+  const item = await Inventory.findById(req.params.id).populate('healthCenter');
   if (!item) return next(new AppError('Item not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && item.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('You can only update stock at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && item.healthCenter?.district !== req.user.district) {
+    return next(new AppError('You can only update stock in your district.', HTTP.FORBIDDEN));
+  }
 
   let newStock;
   if (operation === 'add') newStock = item.currentStock + qty;
@@ -120,7 +158,7 @@ exports.updateStock = asyncHandler(async (req, res, next) => {
 
   // Check low stock alert
   if (newStock <= item.minStockLevel) {
-    const center = await HealthCenter.findById(item.healthCenter);
+    const center = item.healthCenter;
     if (center && center.inCharge) {
       await createNotification({
         recipient: center.inCharge,
@@ -136,7 +174,7 @@ exports.updateStock = asyncHandler(async (req, res, next) => {
   // Emit socket
   const io = req.app.get('io');
   if (io) {
-    io.to(`center-${item.healthCenter}`).emit('inventory:stock_updated', {
+    io.to(`center-${item.healthCenter._id}`).emit('inventory:stock_updated', {
       itemId: item._id,
       itemName: item.itemName,
       currentStock: newStock,
@@ -150,7 +188,7 @@ exports.updateStock = asyncHandler(async (req, res, next) => {
 // ─── @route GET /api/v1/inventory/low-stock ──────────────────────────────────
 exports.getLowStockItems = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPaginationParams(req.query);
-  const filter = buildInventoryFilter(req);
+  const filter = await buildInventoryFilter(req);
   filter.$expr = { $lte: ['$currentStock', '$minStockLevel'] };
   filter.isActive = true;
 
@@ -180,7 +218,7 @@ exports.getExpiringItems = asyncHandler(async (req, res) => {
   alertDate.setDate(alertDate.getDate() + days);
 
   const { page, limit, skip } = getPaginationParams(req.query);
-  const filter = buildInventoryFilter(req);
+  const filter = await buildInventoryFilter(req);
   filter.expiryDate = { $lte: alertDate };
   filter.currentStock = { $gt: 0 };
   filter.isActive = true;
@@ -204,8 +242,20 @@ exports.getExpiringItems = asyncHandler(async (req, res) => {
 });
 
 // ─── @route GET /api/v1/inventory/center/:centerId ───────────────────────────
-exports.getInventoryByCenter = asyncHandler(async (req, res) => {
+exports.getInventoryByCenter = asyncHandler(async (req, res, next) => {
   const { page, limit, skip } = getPaginationParams(req.query);
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== req.params.centerId) {
+    return next(new AppError('Access denied. You can only view inventory of your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const center = await HealthCenter.findById(req.params.centerId);
+    if (!center || center.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only view inventory in your district.', HTTP.FORBIDDEN));
+    }
+  }
+
   const filter = { healthCenter: req.params.centerId, isActive: true };
 
   const { category } = req.query;
@@ -232,8 +282,18 @@ exports.bulkUpdate = asyncHandler(async (req, res, next) => {
 
   const results = [];
   for (const u of updates) {
-    const item = await Inventory.findById(u.id);
+    const item = await Inventory.findById(u.id).populate('healthCenter');
     if (!item) { results.push({ id: u.id, error: 'Not found' }); continue; }
+
+    // Access check for bulk update
+    if (req.user.role === ROLES.STAFF && item.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+      results.push({ id: u.id, error: 'Access denied: different health centre' });
+      continue;
+    }
+    if (req.user.role === ROLES.DISTRICT_ADMIN && item.healthCenter?.district !== req.user.district) {
+      results.push({ id: u.id, error: 'Access denied: different district' });
+      continue;
+    }
 
     let newStock;
     if (u.operation === 'add') newStock = item.currentStock + u.quantity;
@@ -252,7 +312,7 @@ exports.bulkUpdate = asyncHandler(async (req, res, next) => {
 });
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
-const buildInventoryFilter = (req) => {
+const buildInventoryFilter = async (req) => {
   const filter = { isActive: true };
   const { healthCenter, category, search } = req.query;
 
@@ -268,6 +328,17 @@ const buildInventoryFilter = (req) => {
 
   if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
     filter.healthCenter = req.user.healthCenter;
+  } else if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const HealthCenter = require('../models/HealthCenter');
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    const centerIds = centers.map((c) => c._id);
+    if (healthCenter) {
+      if (!centerIds.map((id) => id.toString()).includes(healthCenter.toString())) {
+        filter.healthCenter = null;
+      }
+    } else {
+      filter.healthCenter = { $in: centerIds };
+    }
   }
 
   return filter;

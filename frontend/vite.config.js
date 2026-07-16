@@ -44,8 +44,17 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
-      // Raise the bundle-size warning threshold (recharts + leaflet are large)
+      sourcemap: false,
       chunkSizeWarningLimit: 1500,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+          },
+        },
+      },
     },
   }
 })

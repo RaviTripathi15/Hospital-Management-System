@@ -12,7 +12,7 @@ const { HTTP, ROLES, APPOINTMENT_STATUS, NOTIFICATION_TYPES } = require('../conf
 // ─── @route GET /api/v1/appointments ─────────────────────────────────────────
 exports.getAllAppointments = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPaginationParams(req.query);
-  const filter = buildFilter(req);
+  const filter = await buildFilter(req);
 
   const [appointments, total] = await Promise.all([
     Appointment.find(filter)
@@ -45,6 +45,16 @@ exports.getAppointmentById = asyncHandler(async (req, res, next) => {
     return next(new AppError('Access denied. You can only view your own appointments.', HTTP.FORBIDDEN));
   }
 
+  // Hospital staff can only view their own facility's appointments
+  if (isStaffOrAdmin) {
+    if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role) && appt.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+      return next(new AppError('Access denied. You can only view appointments at your health centre.', HTTP.FORBIDDEN));
+    }
+    if (req.user.role === ROLES.DISTRICT_ADMIN && appt.healthCenter?.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only view appointments in your district.', HTTP.FORBIDDEN));
+    }
+  }
+
   return res.status(HTTP.OK).json(success(appt, 'Appointment retrieved.'));
 });
 
@@ -59,6 +69,14 @@ exports.createAppointment = asyncHandler(async (req, res, next) => {
 
   if (!patient) return next(new AppError('Patient not found.', HTTP.NOT_FOUND));
   if (!center) return next(new AppError('Health centre not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role) && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('You can only create appointments at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('You can only create appointments in your district.', HTTP.FORBIDDEN));
+  }
 
   // Check for conflicting appointment (same doctor, date, timeslot)
   if (doctor) {
@@ -119,13 +137,21 @@ exports.createAppointment = asyncHandler(async (req, res, next) => {
 
 // ─── @route PUT /api/v1/appointments/:id ─────────────────────────────────────
 exports.updateAppointment = asyncHandler(async (req, res, next) => {
-  const appt = await Appointment.findById(req.params.id);
+  const appt = await Appointment.findById(req.params.id).populate('healthCenter');
   if (!appt) return next(new AppError('Appointment not found.', HTTP.NOT_FOUND));
 
   // Check permissions: Citizens can only update their own appointments
   const isStaffOrAdmin = [ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN].includes(req.user.role);
   if (!isStaffOrAdmin && appt.createdBy?.toString() !== req.user._id.toString()) {
     return next(new AppError('Access denied. You can only update your own appointments.', HTTP.FORBIDDEN));
+  }
+
+  // Staff and Doctors can only update their facility's appointments
+  if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role) && appt.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only update appointments at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && appt.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only update appointments in your district.', HTTP.FORBIDDEN));
   }
 
   if (appt.status === APPOINTMENT_STATUS.CANCELLED) {
@@ -151,7 +177,7 @@ exports.updateAppointment = asyncHandler(async (req, res, next) => {
       visitDate: appt.date,
       appointmentType: appt.type,
       doctor: appt.doctor,
-      healthCenter: appt.healthCenter,
+      healthCenter: appt.healthCenter?._id || appt.healthCenter,
       symptoms: req.body.symptoms || appt.symptoms,
       diagnosis: req.body.diagnosis,
       prescription: req.body.prescription,
@@ -169,13 +195,21 @@ exports.updateAppointment = asyncHandler(async (req, res, next) => {
 
 // ─── @route PATCH /api/v1/appointments/:id/cancel ────────────────────────────
 exports.cancelAppointment = asyncHandler(async (req, res, next) => {
-  const appt = await Appointment.findById(req.params.id);
+  const appt = await Appointment.findById(req.params.id).populate('healthCenter');
   if (!appt) return next(new AppError('Appointment not found.', HTTP.NOT_FOUND));
 
   // Check permissions: Citizens can only cancel their own appointments
   const isStaffOrAdmin = [ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN].includes(req.user.role);
   if (!isStaffOrAdmin && appt.createdBy?.toString() !== req.user._id.toString()) {
     return next(new AppError('Access denied. You can only cancel your own appointments.', HTTP.FORBIDDEN));
+  }
+
+  // Staff and Doctors can only cancel their facility's appointments
+  if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role) && appt.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only cancel appointments at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && appt.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only cancel appointments in your district.', HTTP.FORBIDDEN));
   }
 
   if (appt.status === APPOINTMENT_STATUS.COMPLETED) {
@@ -201,9 +235,20 @@ exports.cancelAppointment = asyncHandler(async (req, res, next) => {
 });
 
 // ─── @route GET /api/v1/appointments/center/:centerId ────────────────────────
-exports.getAppointmentsByCenter = asyncHandler(async (req, res) => {
+exports.getAppointmentsByCenter = asyncHandler(async (req, res, next) => {
   const { page, limit, skip } = getPaginationParams(req.query);
   const { status, type, startDate, endDate } = req.query;
+
+  // Access checks
+  if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role) && req.user.healthCenter?.toString() !== req.params.centerId) {
+    return next(new AppError('Access denied. You can only view appointments at your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const center = await HealthCenter.findById(req.params.centerId);
+    if (!center || center.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only view appointments in your district.', HTTP.FORBIDDEN));
+    }
+  }
 
   const filter = { healthCenter: req.params.centerId };
   if (status) filter.status = status;
@@ -229,9 +274,23 @@ exports.getAppointmentsByCenter = asyncHandler(async (req, res) => {
 });
 
 // ─── @route GET /api/v1/appointments/doctor/:doctorId ────────────────────────
-exports.getAppointmentsByDoctor = asyncHandler(async (req, res) => {
+exports.getAppointmentsByDoctor = asyncHandler(async (req, res, next) => {
   const { page, limit, skip } = getPaginationParams(req.query);
   const { status, date } = req.query;
+
+  // Access checks
+  if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role)) {
+    const doc = await User.findById(req.params.doctorId);
+    if (!doc || doc.healthCenter?.toString() !== req.user.healthCenter?.toString()) {
+      return next(new AppError('Access denied. You can only view appointments of doctors at your health centre.', HTTP.FORBIDDEN));
+    }
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const doc = await User.findById(req.params.doctorId);
+    if (!doc || doc.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only view appointments of doctors in your district.', HTTP.FORBIDDEN));
+    }
+  }
 
   const filter = { doctor: req.params.doctorId };
   if (status) filter.status = status;
@@ -266,10 +325,13 @@ exports.getTodayAppointments = asyncHandler(async (req, res) => {
     date: { $gte: start, $lte: end },
   };
 
-  if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
+  if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role) && req.user.healthCenter) {
     filter.healthCenter = req.user.healthCenter;
+  } else if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    filter.healthCenter = { $in: centers.map(c => c._id) };
   }
-  if (req.user.role === ROLES.STAFF && req.query.doctorMode === 'true') {
+  if (req.user.role === ROLES.DOCTOR && req.query.doctorMode === 'true') {
     filter.doctor = req.user._id;
   }
 
@@ -292,8 +354,11 @@ exports.getMyAppointments = asyncHandler(async (req, res) => {
     filter.createdBy = req.user._id;
   } else if (req.user.role === ROLES.DOCTOR) {
     filter.doctor = req.user._id;
-  } else if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
+  } else if ([ROLES.STAFF, ROLES.NURSE].includes(req.user.role) && req.user.healthCenter) {
     filter.healthCenter = req.user.healthCenter;
+  } else if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    filter.healthCenter = { $in: centers.map(c => c._id) };
   } else {
     filter.createdBy = req.user._id;
   }
@@ -314,7 +379,7 @@ exports.getMyAppointments = asyncHandler(async (req, res) => {
 });
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
-const buildFilter = (req) => {
+const buildFilter = async (req) => {
   const filter = {};
   const { healthCenter, status, type, patient, doctor, startDate, endDate } = req.query;
 
@@ -331,8 +396,18 @@ const buildFilter = (req) => {
 
   if (req.user.role === ROLES.CITIZEN) {
     filter.createdBy = req.user._id;
-  } else if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
+  } else if ([ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role) && req.user.healthCenter) {
     filter.healthCenter = req.user.healthCenter;
+  } else if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    const centerIds = centers.map((c) => c._id);
+    if (healthCenter) {
+      if (!centerIds.map((id) => id.toString()).includes(healthCenter.toString())) {
+        filter.healthCenter = null;
+      }
+    } else {
+      filter.healthCenter = { $in: centerIds };
+    }
   }
 
   return filter;

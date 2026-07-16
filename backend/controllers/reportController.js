@@ -12,7 +12,7 @@ const { HTTP, ROLES, REPORT_STATUS, NOTIFICATION_TYPES } = require('../config/co
 // ─── @route GET /api/v1/reports ───────────────────────────────────────────────
 exports.getAllReports = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPaginationParams(req.query);
-  const filter = buildReportFilter(req);
+  const filter = await buildReportFilter(req);
 
   const [reports, total] = await Promise.all([
     Report.find(filter)
@@ -37,6 +37,15 @@ exports.getReportById = asyncHandler(async (req, res, next) => {
     .populate('approvedBy', 'name email');
 
   if (!report) return next(new AppError('Report not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && report.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only view reports of your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && report.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only view reports in your district.', HTTP.FORBIDDEN));
+  }
+
   return res.status(HTTP.OK).json(success(report, 'Report retrieved.'));
 });
 
@@ -46,6 +55,14 @@ exports.createReport = asyncHandler(async (req, res, next) => {
 
   const center = await HealthCenter.findById(centerId);
   if (!center) return next(new AppError('Health centre not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('You can only create reports for your own health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && center.district !== req.user.district) {
+    return next(new AppError('You can only create reports for health centres in your district.', HTTP.FORBIDDEN));
+  }
 
   // Check for duplicate
   const existing = await Report.findOne({
@@ -73,8 +90,16 @@ exports.createReport = asyncHandler(async (req, res, next) => {
 
 // ─── @route PUT /api/v1/reports/:id ──────────────────────────────────────────
 exports.updateReport = asyncHandler(async (req, res, next) => {
-  const report = await Report.findById(req.params.id);
+  const report = await Report.findById(req.params.id).populate('healthCenter');
   if (!report) return next(new AppError('Report not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && report.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only modify reports of your own health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && report.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only modify reports in your district.', HTTP.FORBIDDEN));
+  }
 
   if (report.status === REPORT_STATUS.APPROVED) {
     return next(new AppError('Approved reports cannot be edited.', HTTP.FORBIDDEN));
@@ -94,6 +119,14 @@ exports.updateReport = asyncHandler(async (req, res, next) => {
 exports.submitReport = asyncHandler(async (req, res, next) => {
   const report = await Report.findById(req.params.id).populate('healthCenter');
   if (!report) return next(new AppError('Report not found.', HTTP.NOT_FOUND));
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && report.healthCenter?._id?.toString() !== req.user.healthCenter?.toString()) {
+    return next(new AppError('Access denied. You can only modify reports of your own health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN && report.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only modify reports in your district.', HTTP.FORBIDDEN));
+  }
 
   if (report.status !== REPORT_STATUS.DRAFT) {
     return next(new AppError('Only draft reports can be submitted.', HTTP.BAD_REQUEST));
@@ -131,6 +164,11 @@ exports.approveReport = asyncHandler(async (req, res, next) => {
   const report = await Report.findById(req.params.id).populate('healthCenter');
   if (!report) return next(new AppError('Report not found.', HTTP.NOT_FOUND));
 
+  // Access check
+  if (req.user.role === ROLES.DISTRICT_ADMIN && report.healthCenter?.district !== req.user.district) {
+    return next(new AppError('Access denied. You can only approve/reject reports in your district.', HTTP.FORBIDDEN));
+  }
+
   if (report.status !== REPORT_STATUS.SUBMITTED) {
     return next(new AppError('Only submitted reports can be approved/rejected.', HTTP.BAD_REQUEST));
   }
@@ -166,8 +204,20 @@ exports.approveReport = asyncHandler(async (req, res, next) => {
 });
 
 // ─── @route GET /api/v1/reports/center/:centerId ─────────────────────────────
-exports.getReportsByCenter = asyncHandler(async (req, res) => {
+exports.getReportsByCenter = asyncHandler(async (req, res, next) => {
   const { page, limit, skip } = getPaginationParams(req.query);
+
+  // Access checks
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== req.params.centerId) {
+    return next(new AppError('Access denied. You can only view reports of your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const center = await HealthCenter.findById(req.params.centerId);
+    if (!center || center.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only view reports in your district.', HTTP.FORBIDDEN));
+    }
+  }
+
   const filter = { healthCenter: req.params.centerId };
   const { status, reportType } = req.query;
   if (status) filter.status = status;
@@ -193,12 +243,23 @@ exports.generateSummary = asyncHandler(async (req, res, next) => {
     return next(new AppError('centerId, startDate, and endDate are required.', HTTP.BAD_REQUEST));
   }
 
+  // Access checks
+  if (req.user.role === ROLES.STAFF && req.user.healthCenter?.toString() !== centerId) {
+    return next(new AppError('Access denied. You can only generate summaries for your health centre.', HTTP.FORBIDDEN));
+  }
+  if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const center = await HealthCenter.findById(centerId);
+    if (!center || center.district !== req.user.district) {
+      return next(new AppError('Access denied. You can only generate summaries for facilities in your district.', HTTP.FORBIDDEN));
+    }
+  }
+
   const metrics = await aggregateMetrics(centerId, startDate, endDate);
   return res.status(HTTP.OK).json(success({ metrics, period: { startDate, endDate }, centerId }, 'Summary generated.'));
 });
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
-const buildReportFilter = (req) => {
+const buildReportFilter = async (req) => {
   const filter = {};
   const { healthCenter, status, reportType, startDate, endDate } = req.query;
 
@@ -210,6 +271,16 @@ const buildReportFilter = (req) => {
 
   if (req.user.role === ROLES.STAFF && req.user.healthCenter) {
     filter.healthCenter = req.user.healthCenter;
+  } else if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    const centerIds = centers.map((c) => c._id);
+    if (healthCenter) {
+      if (!centerIds.map((id) => id.toString()).includes(healthCenter.toString())) {
+        filter.healthCenter = null;
+      }
+    } else {
+      filter.healthCenter = { $in: centerIds };
+    }
   }
 
   return filter;

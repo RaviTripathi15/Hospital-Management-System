@@ -10,10 +10,35 @@ const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { success } = require('../utils/apiResponse');
 const { HTTP, ROLES, APPOINTMENT_STATUS } = require('../config/constants');
 
+// Helper: get tenant-scoped center filter for analytics
+const getAnalyticsCenterFilter = async (req) => {
+  if (req.user.role === ROLES.STAFF || [ROLES.DOCTOR, ROLES.NURSE].includes(req.user.role)) {
+    const userCenter = req.user.healthCenter ? req.user.healthCenter.toString() : null;
+    return { healthCenter: userCenter ? new (require('mongoose').Types.ObjectId)(userCenter) : null };
+  } else if (req.user.role === ROLES.DISTRICT_ADMIN) {
+    const centers = await HealthCenter.find({ district: req.user.district, isActive: true }).select('_id');
+    const centerIds = centers.map((c) => c._id);
+    if (req.query.centerId) {
+      if (!centerIds.map((id) => id.toString()).includes(req.query.centerId.toString())) {
+        throw new AppError('Access denied. Facility is not in your district.', HTTP.FORBIDDEN);
+      }
+      return { healthCenter: new (require('mongoose').Types.ObjectId)(req.query.centerId) };
+    } else {
+      return { healthCenter: { $in: centerIds.map((id) => new (require('mongoose').Types.ObjectId)(id)) } };
+    }
+  } else if (req.user.role === ROLES.SUPER_ADMIN) {
+    if (req.query.centerId) {
+      return { healthCenter: new (require('mongoose').Types.ObjectId)(req.query.centerId) };
+    }
+    return {};
+  } else {
+    throw new AppError('Access denied.', HTTP.FORBIDDEN);
+  }
+};
+
 // ─── @route GET /api/v1/analytics/dashboard ──────────────────────────────────
-exports.getDashboardStats = asyncHandler(async (req, res) => {
-  const centerId = req.query.centerId || (req.user.healthCenter ? req.user.healthCenter.toString() : null);
-  const centerFilter = centerId ? { healthCenter: centerId } : {};
+exports.getDashboardStats = asyncHandler(async (req, res, next) => {
+  const centerFilter = await getAnalyticsCenterFilter(req);
 
   const now = new Date();
   const startOfToday = new Date(now.setHours(0, 0, 0, 0));
@@ -41,7 +66,7 @@ exports.getDashboardStats = asyncHandler(async (req, res) => {
     Appointment.countDocuments({ ...centerFilter, status: APPOINTMENT_STATUS.SCHEDULED, date: { $gte: new Date() } }),
     Inventory.countDocuments({ ...centerFilter, isActive: true, $expr: { $lte: ['$currentStock', '$minStockLevel'] } }),
     Inventory.countDocuments({ ...centerFilter, isActive: true, expiryDate: { $lt: new Date() }, currentStock: { $gt: 0 } }),
-    User.countDocuments({ ...(centerId ? { healthCenter: centerId } : {}), isActive: true }),
+    User.countDocuments({ ...centerFilter, isActive: true }),
     Report.countDocuments({ ...centerFilter, status: 'submitted' }),
   ]);
 
@@ -65,7 +90,13 @@ exports.getDashboardStats = asyncHandler(async (req, res) => {
 
 // ─── @route GET /api/v1/analytics/district ───────────────────────────────────
 exports.getDistrictStats = asyncHandler(async (req, res, next) => {
-  const district = req.query.district || req.user.district;
+  let district = req.user.district;
+  if (req.user.role === ROLES.SUPER_ADMIN && req.query.district) {
+    district = req.query.district;
+  } else if (req.user.role !== ROLES.SUPER_ADMIN && req.user.role !== ROLES.DISTRICT_ADMIN) {
+    return next(new AppError('Access denied.', HTTP.FORBIDDEN));
+  }
+
   if (!district) return next(new AppError('District is required.', HTTP.BAD_REQUEST));
 
   const centers = await HealthCenter.find({ district, isActive: true }).select('_id name type');
@@ -104,7 +135,11 @@ exports.getDistrictStats = asyncHandler(async (req, res, next) => {
 });
 
 // ─── @route GET /api/v1/analytics/national ───────────────────────────────────
-exports.getNationalStats = asyncHandler(async (req, res) => {
+exports.getNationalStats = asyncHandler(async (req, res, next) => {
+  if (req.user.role !== ROLES.SUPER_ADMIN) {
+    return next(new AppError('Access denied. National statistics are only accessible to super administrators.', HTTP.FORBIDDEN));
+  }
+
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   const [
@@ -157,11 +192,8 @@ exports.getNationalStats = asyncHandler(async (req, res) => {
 
 // ─── @route GET /api/v1/analytics/inventory ──────────────────────────────────
 exports.getInventoryAnalytics = asyncHandler(async (req, res) => {
-  const centerId = req.query.centerId || req.user.healthCenter;
-
-  const matchStage = centerId
-    ? { $match: { healthCenter: new (require('mongoose').Types.ObjectId)(centerId), isActive: true } }
-    : { $match: { isActive: true } };
+  const centerFilter = await getAnalyticsCenterFilter(req);
+  const matchStage = { $match: { ...centerFilter, isActive: true } };
 
   const [categoryBreakdown, expiryBreakdown, stockStatus] = await Promise.all([
     Inventory.aggregate([
@@ -217,7 +249,7 @@ exports.getInventoryAnalytics = asyncHandler(async (req, res) => {
 
 // ─── @route GET /api/v1/analytics/appointment-trends ─────────────────────────
 exports.getAppointmentTrends = asyncHandler(async (req, res) => {
-  const centerId = req.query.centerId || req.user.healthCenter;
+  const centerFilter = await getAnalyticsCenterFilter(req);
   const days = parseInt(req.query.days, 10) || 30;
 
   const startDate = new Date();
@@ -226,7 +258,7 @@ exports.getAppointmentTrends = asyncHandler(async (req, res) => {
   const matchStage = {
     $match: {
       date: { $gte: startDate },
-      ...(centerId ? { healthCenter: new (require('mongoose').Types.ObjectId)(centerId) } : {}),
+      ...centerFilter,
     },
   };
 
@@ -260,10 +292,8 @@ exports.getAppointmentTrends = asyncHandler(async (req, res) => {
 
 // ─── @route GET /api/v1/analytics/patient-demographics ───────────────────────
 exports.getPatientDemographics = asyncHandler(async (req, res) => {
-  const centerId = req.query.centerId || req.user.healthCenter;
-  const matchStage = centerId
-    ? { $match: { healthCenter: new (require('mongoose').Types.ObjectId)(centerId), isActive: true } }
-    : { $match: { isActive: true } };
+  const centerFilter = await getAnalyticsCenterFilter(req);
+  const matchStage = { $match: { ...centerFilter, isActive: true } };
 
   const [genderDist, ageGroups, bloodGroupDist, monthlyRegistrations] = await Promise.all([
     Patient.aggregate([
