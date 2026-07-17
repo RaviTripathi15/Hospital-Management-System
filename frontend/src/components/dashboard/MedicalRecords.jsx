@@ -369,7 +369,7 @@ export default function MedicalRecords({ reports = [], userName }) {
                     <div className="flex items-center gap-2">
                       <span className="flex items-center gap-1 text-[9px] font-bold text-slate-450 dark:text-slate-500">
                         <Calendar className="w-3 h-3 text-slate-400" />
-                        {new Date(rec.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: '2026' })}
+                        {new Date(rec.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                       {rec.tags?.slice(0, 1).map((t, tIdx) => (
                         <span key={tIdx} className="hidden sm:inline-block text-[8px] font-bold text-slate-550 dark:text-slate-450 bg-slate-100 dark:bg-slate-800 px-1 rounded">
