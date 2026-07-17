@@ -42,7 +42,7 @@ export default function Login() {
       } else {
         localStorage.removeItem('remember_email')
       }
-      await login(data.email, data.password)
+      await login(data.email, data.password, rememberMe)
       navigate(from, { replace: true })
     } catch (err) {
       console.error(err)

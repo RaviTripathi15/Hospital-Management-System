@@ -8,13 +8,14 @@ export const useAuthStore = create(
       token: null,
       refreshToken: null,
       isAuthenticated: false,
+      rememberMe: false,
 
-      login: (user, token, refreshToken) => {
-        set({ user, token, refreshToken, isAuthenticated: true })
+      login: (user, token, refreshToken, rememberMe = false) => {
+        set({ user, token, refreshToken, isAuthenticated: true, rememberMe })
       },
 
       logout: () => {
-        set({ user: null, token: null, refreshToken: null, isAuthenticated: false })
+        set({ user: null, token: null, refreshToken: null, isAuthenticated: false, rememberMe: false })
         localStorage.removeItem('auth-storage')
       },
 
@@ -37,11 +38,36 @@ export const useAuthStore = create(
     }),
     {
       name: 'auth-storage',
+      storage: {
+        getItem: (name) => {
+          return localStorage.getItem(name) || sessionStorage.getItem(name)
+        },
+        setItem: (name, value) => {
+          try {
+            const parsed = JSON.parse(value)
+            const remember = parsed.state?.rememberMe
+            if (remember) {
+              localStorage.setItem(name, value)
+              sessionStorage.removeItem(name)
+            } else {
+              sessionStorage.setItem(name, value)
+              localStorage.removeItem(name)
+            }
+          } catch (e) {
+            localStorage.setItem(name, value)
+          }
+        },
+        removeItem: (name) => {
+          localStorage.removeItem(name)
+          sessionStorage.removeItem(name)
+        }
+      },
       partialize: (state) => ({
         user: state.user,
         token: state.token,
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
+        rememberMe: state.rememberMe,
       }),
     }
   )

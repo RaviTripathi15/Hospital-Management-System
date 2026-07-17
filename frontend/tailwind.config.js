@@ -79,10 +79,10 @@ export default {
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
-        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-        'elevated': '0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
+        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 8px -1px rgba(0, 0, 0, 0.03)',
+        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03)',
+        'elevated': '0 12px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03)',
+        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.03)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
@@ -107,8 +107,9 @@ export default {
         },
       },
       borderRadius: {
-        'xl': '1rem',
-        '2xl': '1.5rem',
+        'xl': '0.75rem',      // 12px
+        '2xl': '1rem',        // 16px
+        '3xl': '1.25rem',     // 20px
       },
     },
   },

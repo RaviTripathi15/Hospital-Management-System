@@ -18,7 +18,7 @@
   }
 
   body {
-    @apply font-sans text-gray-900 bg-gray-50 dark:bg-gray-900 dark:text-gray-100;
+    @apply font-sans text-slate-800 bg-[#f8fafc] dark:bg-[#090d16] dark:text-slate-100;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -30,7 +30,7 @@
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-gray-800/90 rounded-2xl shadow-soft border border-gray-100 dark:border-gray-700/60 transition-all duration-300 backdrop-blur-md;
+    @apply bg-white dark:bg-[#131c2e]/90 rounded-xl shadow-soft border border-slate-100 dark:border-[#1e2d4a]/85 transition-all duration-300 backdrop-blur-md;
   }
 
   .card-hover {
@@ -38,11 +38,11 @@
   }
 
   .glass-card {
-    @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border border-white/20 dark:border-gray-800/30 rounded-2xl shadow-soft;
+    @apply bg-white/70 dark:bg-[#131c2e]/70 backdrop-blur-md border border-white/20 dark:border-[#1e2d4a]/50 rounded-xl shadow-soft;
   }
 
   .glass-navbar {
-    @apply bg-white/75 dark:bg-gray-900/75 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-800/50;
+    @apply bg-white/75 dark:bg-[#090d16]/75 backdrop-blur-lg border-b border-slate-200/50 dark:border-[#1e2d4a]/50;
   }
 
   .form-group {
@@ -50,29 +50,29 @@
   }
 
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200;
-    @apply text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100;
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200;
+    @apply text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#131c2e] hover:text-slate-900 dark:hover:text-slate-100;
   }
 
   .sidebar-link.active {
-    @apply bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-950/40 dark:to-primary-900/10 text-primary-600 dark:text-primary-400 font-semibold shadow-inner-soft;
+    @apply bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-[#131c2e] dark:to-[#1a263d] text-primary-600 dark:text-primary-400 font-semibold shadow-inner-soft;
     border-left: 3px solid theme('colors.primary.500');
   }
 
   .btn-primary {
-    @apply bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-medium px-4 py-2.5 rounded-xl transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md active:scale-95;
+    @apply bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-medium px-4 py-2.5 rounded-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md active:scale-95;
   }
 
   .btn-emerald {
-    @apply bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-medium px-4 py-2.5 rounded-xl transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md active:scale-95;
+    @apply bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-medium px-4 py-2.5 rounded-lg transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md active:scale-95;
   }
 
   .btn-secondary {
-    @apply bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 font-medium px-4 py-2.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 active:scale-95;
+    @apply bg-white dark:bg-[#131c2e]/80 border border-slate-200 dark:border-[#1e2d4a]/80 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1e2d4a]/50 font-medium px-4 py-2.5 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2 active:scale-95;
   }
 
   .input-field {
-    @apply w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-sm shadow-inner-soft;
+    @apply w-full px-4 py-2.5 border border-slate-200 dark:border-[#1e2d4a]/80 rounded-lg bg-white dark:bg-[#131c2e]/60 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all text-sm shadow-inner-soft;
   }
 
   .input-error {
@@ -80,7 +80,7 @@
   }
 
   .label {
-    @apply block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5;
+    @apply block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5;
   }
 
   .badge {
@@ -104,11 +104,11 @@
   }
 
   .table-header {
-    @apply px-5 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700;
+    @apply px-5 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50/50 dark:bg-[#131c2e]/50 border-b border-slate-100 dark:border-[#1e2d4a]/50;
   }
 
   .table-cell {
-    @apply px-5 py-4 text-sm text-gray-900 dark:text-gray-100 border-b border-gray-50 dark:border-gray-800/50;
+    @apply px-5 py-4 text-sm text-slate-800 dark:text-slate-100 border-b border-slate-50 dark:border-[#1e2d4a]/30;
   }
 }
 

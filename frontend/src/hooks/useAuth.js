@@ -11,10 +11,10 @@ export function useAuth() {
   const { user, token, isAuthenticated, login: storeLogin, logout: storeLogout, updateUser } = useAuthStore()
 
   const login = useCallback(
-    async (email, password) => {
+    async (email, password, rememberMe = false) => {
       const data = await authService.login(email, password)
       const { user: userData, accessToken, refreshToken } = data.data || data
-      storeLogin(userData, accessToken, refreshToken)
+      storeLogin(userData, accessToken, refreshToken, rememberMe)
       toast.success(t('auth.loginSuccess'))
       return userData
     },
