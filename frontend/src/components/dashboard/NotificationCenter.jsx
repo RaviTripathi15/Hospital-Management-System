@@ -107,12 +107,12 @@ export default function NotificationCenter() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft space-y-6">
+    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-soft space-y-6">
       
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-base font-bold text-gray-955 dark:text-white flex items-center gap-2">
+          <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Bell className="w-5 h-5 text-primary-500 animate-swing" />
             Personal Notifications Center
             {unreadCount > 0 && (
@@ -131,7 +131,7 @@ export default function NotificationCenter() {
           <div className="flex gap-2 shrink-0">
             <button
               onClick={handleMarkAllRead}
-              className="px-3.5 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-650 dark:text-gray-300 font-extrabold rounded-xl text-[10px] uppercase tracking-wider transition-colors border border-gray-150/45 dark:border-gray-750/30 cursor-pointer active:scale-95 flex items-center gap-1"
+              className="px-3.5 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-extrabold rounded-xl text-[10px] uppercase tracking-wider transition-colors border border-gray-200/40 dark:border-gray-700/30 cursor-pointer active:scale-95 flex items-center gap-1"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Mark All Read</span>
@@ -162,8 +162,8 @@ export default function NotificationCenter() {
             className={cn(
               "px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition-all border cursor-pointer active:scale-95",
               activeTab === tab.id
-                ? "bg-primary-600 text-white border-primary-600 shadow-soft"
-                : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-750 text-gray-650 dark:text-gray-300 border-gray-150/40 dark:border-gray-700/30"
+                ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200/40 dark:border-gray-700/30"
             )}
           >
             {tab.label}
@@ -200,8 +200,8 @@ export default function NotificationCenter() {
                   className={cn(
                     "p-4 rounded-2xl border flex gap-4 items-start relative transition-all duration-300 group shadow-sm hover:shadow",
                     notif.isRead 
-                      ? "bg-gray-50/20 dark:bg-gray-850/5 border-gray-150/30 dark:border-gray-800/20 opacity-80"
-                      : "bg-white dark:bg-gray-850 border-gray-150/50 dark:border-gray-800/40"
+                      ? "bg-gray-50/20 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-800/20 opacity-80"
+                      : "bg-white dark:bg-gray-900 border-gray-200/50 dark:border-gray-800/40"
                   )}
                 >
                   {/* Unread indicator */}
@@ -217,14 +217,14 @@ export default function NotificationCenter() {
                   {/* Text details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-4">
-                      <h4 className={cn("text-xs font-extrabold truncate", notif.isRead ? "text-gray-650 dark:text-gray-400" : "text-gray-950 dark:text-white")}>
+                      <h4 className={cn("text-xs font-extrabold truncate", notif.isRead ? "text-gray-500 dark:text-gray-500" : "text-gray-900 dark:text-white")}>
                         {notif.title}
                       </h4>
                       <span className="text-[9px] font-semibold text-gray-400 dark:text-gray-500 shrink-0">
                         {notif.timestamp}
                       </span>
                     </div>
-                    <p className="text-[11px] leading-relaxed text-gray-505 dark:text-gray-450 mt-1 font-medium select-none">
+                    <p className="text-[11px] leading-relaxed text-gray-600 dark:text-gray-300 mt-1 font-medium select-none">
                       {notif.message}
                     </p>
                   </div>
