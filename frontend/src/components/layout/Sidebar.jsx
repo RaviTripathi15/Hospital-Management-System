@@ -25,6 +25,7 @@ const NAV_GROUPS = [
     items: [
       { path: '/patients', icon: Users, label: 'navigation.patients', roles: ['staff', 'doctor', 'nurse', 'district_admin', 'super_admin'] },
       { path: '/appointments', icon: Calendar, label: 'navigation.appointments', roles: ['all'] },
+      { path: '/ai-assistant', icon: Brain, label: 'navigation.aiAssistant', roles: ['all'] },
       { path: '/inventory', icon: Package, label: 'navigation.inventory', roles: ['staff', 'doctor', 'nurse', 'district_admin', 'super_admin'] },
       { path: '/beds', icon: Activity, label: 'navigation.beds', roles: ['staff', 'doctor', 'nurse', 'district_admin', 'super_admin'] },
       { path: '/attendance', icon: Clock3, label: 'navigation.attendance', roles: ['staff', 'doctor', 'nurse', 'district_admin', 'super_admin'] },

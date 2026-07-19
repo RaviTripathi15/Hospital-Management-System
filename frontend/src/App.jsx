@@ -47,6 +47,7 @@ const NationalAnalytics = React.lazy(() => import('@/pages/analytics/NationalAna
 
 // AI Page
 const AIDashboard = React.lazy(() => import('@/pages/ai/AIDashboard'))
+const AIHealthAssistantPage = React.lazy(() => import('@/pages/ai/AIHealthAssistantPage'))
 
 // Admin Pages
 const HealthCenterList = React.lazy(() => import('@/pages/admin/HealthCenterList'))
@@ -193,6 +194,9 @@ export default function App() {
             <Route path="/appointments" element={<AppointmentList />} />
             <Route path="/appointments/book" element={<BookAppointment />} />
             <Route path="/appointments/:id" element={<AppointmentDetail />} />
+
+            {/* AI Health Assistant - all auth */}
+            <Route path="/ai-assistant" element={<AIHealthAssistantPage />} />
 
             {/* Attendance - staff+ */}
             <Route element={<ProtectedRoute allowedRoles={[ROLES.STAFF, ROLES.DOCTOR, ROLES.NURSE, ROLES.DISTRICT_ADMIN, ROLES.SUPER_ADMIN]} />}>
