@@ -29,6 +29,12 @@ services:
         value: 7d
       - key: BCRYPT_SALT_ROUNDS
         value: 12
+      - key: GEMINI_API_KEY
+        sync: false
+        placeholder: "Your Google Gemini API Key"
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash
+
 
   # Frontend static site
   - type: web

@@ -61,8 +61,8 @@ const aiService = {
     return response.data
   },
 
-  sendChatMessage: async (id, message) => {
-    const response = await api.post(`/ai/chats/${id}/messages`, { message })
+  sendChatMessage: async (id, message, config = {}) => {
+    const response = await api.post(`/ai/chats/${id}/messages`, { message }, config)
     return response.data
   },
 }

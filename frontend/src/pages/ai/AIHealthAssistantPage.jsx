@@ -261,7 +261,7 @@ export default function AIHealthAssistantPage() {
     abortControllerRef.current = new AbortController()
 
     try {
-      const res = await aiService.sendChatMessage(activeChatId, messageText)
+      const res = await aiService.sendChatMessage(activeChatId, messageText, { signal: abortControllerRef.current.signal })
       const data = res.data || res
       
       setMessages(data.chat?.messages || [])
@@ -269,7 +269,7 @@ export default function AIHealthAssistantPage() {
       // Reload list to get updated updatedAt timestamps and possible auto-renamed title
       fetchConversations()
     } catch (err) {
-      if (err.name === 'AbortError') {
+      if (abortControllerRef.current?.signal?.aborted || err.name === 'AbortError' || err.name === 'CanceledError') {
         toast('Generation stopped')
       } else {
         console.error('Failed to send message', err)
@@ -321,12 +321,12 @@ export default function AIHealthAssistantPage() {
     abortControllerRef.current = new AbortController()
 
     try {
-      const res = await aiService.sendChatMessage(activeChatId, userText)
+      const res = await aiService.sendChatMessage(activeChatId, userText, { signal: abortControllerRef.current.signal })
       const data = res.data || res
       setMessages(data.chat?.messages || [])
       fetchConversations()
     } catch (err) {
-      if (err.name !== 'AbortError') {
+      if (!abortControllerRef.current?.signal?.aborted && err.name !== 'AbortError' && err.name !== 'CanceledError') {
         console.error('Failed to regenerate response', err)
         toast.error('Failed to regenerate response')
       }
