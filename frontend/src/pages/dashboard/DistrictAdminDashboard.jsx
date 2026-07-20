@@ -81,7 +81,7 @@ export default function DistrictAdminDashboard() {
           </p>
         </div>
         <div className="text-right sm:text-right flex flex-col items-end">
-          <p className="text-lg font-bold font-mono text-primary-600 dark:text-primary-450 leading-none">
+          <p className="text-lg font-bold font-mono text-primary-600 dark:text-primary-400 leading-none">
             {liveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
           <p className="text-[10px] text-gray-400 mt-1">
@@ -94,14 +94,14 @@ export default function DistrictAdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {[
           { label: 'Facilities Monitored', value: '45', icon: Building2, color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-          { label: 'Active Health Staff', value: '320', icon: Users, color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450' },
-          { label: 'Pending Reports', value: '8', icon: FileText, color: 'bg-amber-500/10 text-amber-600 dark:text-amber-450' },
-          { label: 'Outbreak Alerts', value: '2 Active', icon: AlertTriangle, color: 'bg-red-500/10 text-red-650 dark:text-red-400' }
+          { label: 'Active Health Staff', value: '320', icon: Users, color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+          { label: 'Pending Reports', value: '8', icon: FileText, color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+          { label: 'Outbreak Alerts', value: '2 Active', icon: AlertTriangle, color: 'bg-red-500/10 text-red-600 dark:text-red-400' }
         ].map((stat, i) => (
           <motion.div
             key={i}
             whileHover={{ y: -2 }}
-            className="card p-5 bg-white dark:bg-gray-800 border border-gray-150/60 dark:border-gray-700/60 flex items-center gap-4 shadow-soft"
+            className="card p-5 bg-white dark:bg-gray-800 border border-gray-200/60 dark:border-gray-700/60 flex items-center gap-4 shadow-soft"
           >
             <div className={cn("p-3 rounded-2xl flex-shrink-0", stat.color)}>
               <stat.icon className="w-6 h-6" />
@@ -118,7 +118,7 @@ export default function DistrictAdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Outbreak chart - 8 cols */}
-        <div className="lg:col-span-8 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft">
+        <div className="lg:col-span-8 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-soft">
           <div className="flex justify-between items-center mb-5">
             <div>
               <h3 className="text-sm font-bold text-gray-950 dark:text-white">Disease Surveillance (Weekly)</h3>
@@ -144,7 +144,7 @@ export default function DistrictAdminDashboard() {
         </div>
 
         {/* Stock Chart - 4 cols */}
-        <div className="lg:col-span-4 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between">
+        <div className="lg:col-span-4 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-bold text-gray-950 dark:text-white">Medical Supplies Audit</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">Stock distribution statistics for all 45 centers.</p>
@@ -172,7 +172,7 @@ export default function DistrictAdminDashboard() {
           <div className="space-y-1.5">
             {facilityStockData.map((item, idx) => (
               <div key={idx} className="flex justify-between items-center text-xs">
-                <span className="flex items-center gap-2 text-gray-650 dark:text-gray-400 font-medium">
+                <span className="flex items-center gap-2 text-gray-600 dark:text-gray-400 font-medium">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
                   {item.name}
                 </span>
@@ -188,7 +188,7 @@ export default function DistrictAdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Pending Tasks Panel */}
-        <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-soft">
           <h3 className="text-sm font-bold text-gray-950 dark:text-white mb-4">Pending Approvals</h3>
           <div className="space-y-3">
             {[
@@ -196,12 +196,12 @@ export default function DistrictAdminDashboard() {
               { text: 'Vaccine Inventory Request Refills - PHC North', time: '5 hours ago', status: 'Pending Review' },
               { text: 'Epidemiology Audit Report May 2026', time: '1 day ago', status: 'Draft' }
             ].map((task, idx) => (
-              <div key={idx} className="p-3.5 bg-gray-50/50 dark:bg-gray-850/30 border border-gray-150/50 dark:border-gray-800/40 rounded-2xl flex items-center justify-between">
+              <div key={idx} className="p-3.5 bg-gray-50/50 dark:bg-gray-800/30 border border-gray-200/50 dark:border-gray-800/40 rounded-2xl flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-gray-900 dark:text-white">{task.text}</p>
-                  <p className="text-[10px] text-gray-405 mt-0.5">{task.time}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{task.time}</p>
                 </div>
-                <span className="badge text-[9px] font-bold bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-450 rounded-full px-2 py-0.5">
+                <span className="badge text-[9px] font-bold bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 rounded-full px-2 py-0.5">
                   {task.status}
                 </span>
               </div>

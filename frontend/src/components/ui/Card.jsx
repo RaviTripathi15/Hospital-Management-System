@@ -11,6 +11,7 @@ export default function Card({
   padding = 'normal',
   className,
   hoverable = false,
+  glass = false,
   ...props
 }) {
   const paddingMap = {
@@ -23,18 +24,18 @@ export default function Card({
   return (
     <div
       className={cn(
-        'card',
-        hoverable && 'hover:shadow-elevated transition-shadow cursor-pointer',
+        glass ? 'glass-card' : 'card',
+        hoverable && 'hover:shadow-elevated hover:-translate-y-0.5 transition-all duration-200 cursor-pointer',
         className
       )}
       {...props}
     >
       {(header || title) && (
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-[#1e2d4a]">
           {header || (
             <div>
-              {title && <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>}
-              {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
+              {title && <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">{title}</h3>}
+              {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
             </div>
           )}
           {action && <div className="flex-shrink-0 ml-4">{action}</div>}
@@ -42,7 +43,7 @@ export default function Card({
       )}
       <div className={cn(paddingMap[padding])}>{children}</div>
       {footer && (
-        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700">{footer}</div>
+        <div className="px-6 py-4 border-t border-slate-200/80 dark:border-[#1e2d4a]">{footer}</div>
       )}
     </div>
   )

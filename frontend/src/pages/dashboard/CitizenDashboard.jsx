@@ -418,8 +418,8 @@ export default function CitizenDashboard() {
           <div className="relative z-10 flex flex-col md:flex-row justify-between gap-6">
             <div className="space-y-4 md:max-w-[65%]">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 dark:bg-slate-900/30 backdrop-blur-md rounded-full border border-white/10 text-emerald-350 dark:text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider mb-3">
-                  <Sparkles className="w-3 h-3 text-emerald-450 animate-bounce" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 dark:bg-slate-900/30 backdrop-blur-md rounded-full border border-white/10 text-emerald-400 dark:text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider mb-3">
+                  <Sparkles className="w-3 h-3 text-emerald-400 animate-bounce" />
                   Health Platform Active
                 </div>
                 <h1 className="text-2xl md:text-3.5xl font-black mt-1 tracking-tight bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
@@ -595,12 +595,12 @@ export default function CitizenDashboard() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {[
-            { label: 'Book Appointment', icon: Calendar, color: 'text-primary-600 bg-primary-50 dark:bg-primary-950/30 dark:text-primary-400 border-primary-100/50 dark:border-primary-900/30', path: '/appointments/book' },
-            { label: 'Find Nearby PHC', icon: Building2, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-450 border-emerald-100/50 dark:border-emerald-900/30', path: '/admin/centers' },
-            { label: 'Medical Records', icon: FileText, color: 'text-indigo-650 bg-indigo-50 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-100/50 dark:border-indigo-900/30', path: '/reports' },
-            { label: 'Emergency Line', icon: PhoneCall, color: 'text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border-red-100/50 dark:border-red-900/30', action: 'emergency' },
-            { label: 'Download Reports', icon: Download, color: 'text-blue-650 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 border-blue-100/50 dark:border-blue-900/30', action: 'download' },
-            { label: 'Update Profile', icon: User, color: 'text-amber-650 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-450 border-amber-100/50 dark:border-amber-900/30', path: '/profile' }
+            { label: 'Book Appointment', icon: Calendar, color: 'text-primary-600 bg-primary-50 dark:bg-primary-950/30 dark:text-primary-400 border-primary-200/50 dark:border-primary-900/30', path: '/appointments/book' },
+            { label: 'Find Nearby PHC', icon: Building2, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/30', path: '/admin/centers' },
+            { label: 'Medical Records', icon: FileText, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-900/30', path: '/reports' },
+            { label: 'Emergency Line', icon: PhoneCall, color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30', action: 'emergency' },
+            { label: 'Download Reports', icon: Download, color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400 border-blue-200/50 dark:border-blue-900/30', action: 'download' },
+            { label: 'Update Profile', icon: User, color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border-amber-200/50 dark:border-amber-900/30', path: '/profile' }
           ].map((action, index) => (
             <button
               key={index}
@@ -617,12 +617,12 @@ export default function CitizenDashboard() {
                 }
               }}
               className={cn(
-                "p-4.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-soft active:scale-95 group cursor-pointer",
+                "p-4 rounded-2xl border flex flex-col items-center justify-center text-center transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-95 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
                 action.color
               )}
             >
-              <action.icon className="w-6 h-6 mb-2.5 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-bold leading-tight uppercase tracking-wider">{action.label}</span>
+              <action.icon className="w-5 h-5 mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-bold leading-tight uppercase tracking-wider">{action.label}</span>
             </button>
           ))}
         </div>

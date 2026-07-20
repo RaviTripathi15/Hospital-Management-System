@@ -457,7 +457,7 @@ export default function PatientDetail() {
                       </div>
 
                       {/* Content block */}
-                      <div className="flex-1 bg-gray-50 dark:bg-gray-950/40 p-4 rounded-xl border border-gray-100 dark:border-gray-850 space-y-3">
+                      <div className="flex-1 bg-gray-50 dark:bg-gray-950/40 p-4 rounded-xl border border-gray-100 dark:border-gray-800 space-y-3">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-gray-150 dark:border-gray-800 pb-2">
                           <div>
                             <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">

@@ -135,7 +135,7 @@ export default function Navbar({ onMenuClick }) {
                   <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
                     {user?.firstName ? `${user.firstName} ${user.lastName}` : 'User Account'}
                   </p>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-550 truncate mt-0.5">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-400 truncate mt-0.5">
                     {user?.email}
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export default function Navbar({ onMenuClick }) {
                 <Link
                   to="/profile"
                   onClick={() => setShowUserMenu(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <User className="w-4 h-4 text-gray-400" />
                   {t('profile.title')}
@@ -151,7 +151,7 @@ export default function Navbar({ onMenuClick }) {
                 <Link
                   to="/admin/settings"
                   onClick={() => setShowUserMenu(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <Settings className="w-4 h-4 text-gray-400" />
                   {t('navigation.settings')}
@@ -159,7 +159,7 @@ export default function Navbar({ onMenuClick }) {
                 <hr className="my-1.5 border-gray-100 dark:border-gray-700" />
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 w-full text-left font-medium transition-colors"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 w-full text-left font-medium transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   {t('auth.logout')}

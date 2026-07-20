@@ -155,7 +155,7 @@ export default function AddPatient() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info Card */}
         <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-850 pb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-2">
             Demographic Details
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -293,7 +293,7 @@ export default function AddPatient() {
 
         {/* Address Card */}
         <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-850 pb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-2">
             Address Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -372,7 +372,7 @@ export default function AddPatient() {
 
         {/* Emergency Contact */}
         <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-850 pb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-2">
             Emergency Contact
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

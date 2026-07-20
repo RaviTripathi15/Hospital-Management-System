@@ -89,7 +89,7 @@ export default function Sidebar({ onClose }) {
               transition={{ duration: 0.15 }}
               className="flex items-center gap-2.5 min-w-0"
             >
-              <div className="w-8.5 h-8.5 bg-gradient-to-tr from-primary-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-primary-550/20">
+              <div className="w-8.5 h-8.5 bg-gradient-to-tr from-primary-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-primary-500/20">
                 <Heart className="w-4.5 h-4.5 text-white fill-white/20" />
               </div>
               <span className="font-bold text-gray-900 dark:text-white text-base tracking-tight truncate">
@@ -103,7 +103,7 @@ export default function Sidebar({ onClose }) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.15 }}
-              className="w-9.5 h-9.5 bg-gradient-to-tr from-primary-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto shadow-md shadow-primary-550/20"
+              className="w-9.5 h-9.5 bg-gradient-to-tr from-primary-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto shadow-md shadow-primary-500/20"
             >
               <Heart className="w-5 h-5 text-white fill-white/10" />
             </motion.div>
@@ -112,7 +112,7 @@ export default function Sidebar({ onClose }) {
 
         {/* Mobile close button */}
         {onClose && !sidebarCollapsed && (
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 lg:hidden text-gray-500 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden text-gray-500 transition-colors">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -120,7 +120,7 @@ export default function Sidebar({ onClose }) {
         {/* Desktop collapse toggle */}
         <button
           onClick={toggleSidebarCollapse}
-          className="hidden lg:flex p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors border border-transparent hover:border-gray-200/40 dark:hover:border-gray-800/40"
+          className="hidden lg:flex p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors border border-transparent hover:border-gray-200/40 dark:hover:border-gray-800/40"
         >
           {sidebarCollapsed ? <ChevronRight className="w-4.5 h-4.5" /> : <ChevronLeft className="w-4.5 h-4.5" />}
         </button>
@@ -134,7 +134,7 @@ export default function Sidebar({ onClose }) {
           return (
             <div key={group.label} className="space-y-1">
               {!sidebarCollapsed && (
-                <p className="text-[10px] font-bold text-gray-450 dark:text-gray-500 uppercase tracking-wider px-3 mb-2">
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider px-3 mb-2">
                   {t(group.label)}
                 </p>
               )}
@@ -164,9 +164,9 @@ export default function Sidebar({ onClose }) {
       </nav>
 
       {/* User section & Logout */}
-      <div className="border-t border-gray-150/60 dark:border-gray-800/60 p-3 flex-shrink-0">
+      <div className="border-t border-gray-200/60 dark:border-gray-800/60 p-3 flex-shrink-0">
         {!sidebarCollapsed && (
-          <div className="flex items-center gap-3 px-3 py-2.5 mb-2 rounded-xl bg-gray-50/60 dark:bg-gray-850/30 border border-gray-100/50 dark:border-gray-800/30">
+          <div className="flex items-center gap-3 px-3 py-2.5 mb-2 rounded-xl bg-gray-50/60 dark:bg-gray-800/30 border border-gray-100/50 dark:border-gray-800/30">
             <div className="w-8.5 h-8.5 bg-primary-100 dark:bg-primary-950/40 rounded-xl flex items-center justify-center text-primary-700 dark:text-primary-400 text-xs font-bold flex-shrink-0 border border-primary-200/30 dark:border-primary-900/30">
               {getInitials(user?.firstName ? `${user.firstName} ${user.lastName}` : user?.email)}
             </div>
@@ -174,7 +174,7 @@ export default function Sidebar({ onClose }) {
               <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
                 {user?.firstName ? `${user.firstName} ${user.lastName}` : 'User'}
               </p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-550 truncate capitalize mt-0.5">
+              <p className="text-[10px] text-gray-400 dark:text-gray-400 truncate capitalize mt-0.5">
                 {user?.role?.replace('_', ' ')}
               </p>
             </div>

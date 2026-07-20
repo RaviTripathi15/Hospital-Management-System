@@ -125,7 +125,7 @@ export default function Unauthorized() {
           {/* Request Access Button (does same thing, triggers modal) */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn bg-primary-50 hover:bg-primary-100 text-primary-650 dark:bg-primary-950/20 dark:text-primary-400 hover:dark:bg-primary-950/40 w-full sm:flex-1 py-3.5 flex items-center justify-center gap-2.5"
+            className="btn bg-primary-50 hover:bg-primary-100 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400 hover:dark:bg-primary-950/40 w-full sm:flex-1 py-3.5 flex items-center justify-center gap-2.5"
           >
             <UserCheck className="w-4 h-4" />
             Request Access

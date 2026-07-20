@@ -402,11 +402,11 @@ export default function UserProfile() {
                       key={perm.key}
                       className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${
                         permissions[perm.key]
-                          ? 'border-green-150 bg-green-50/15 dark:bg-green-950/5 text-gray-800 dark:text-gray-200'
-                          : 'border-gray-100 dark:border-gray-850/80 bg-gray-50/20 dark:bg-gray-800/10 text-gray-455 opacity-60'
+                          ? 'border-green-200 bg-green-50/15 dark:bg-green-950/5 text-gray-800 dark:text-gray-200'
+                          : 'border-gray-100 dark:border-gray-800/80 bg-gray-50/20 dark:bg-gray-800/10 text-gray-400 opacity-60'
                       }`}
                     >
-                      <div className={`p-1 rounded-full ${permissions[perm.key] ? 'bg-green-100 dark:bg-green-950/40 text-green-500' : 'bg-gray-100 dark:bg-gray-750 text-gray-400'}`}>
+                      <div className={`p-1 rounded-full ${permissions[perm.key] ? 'bg-green-100 dark:bg-green-950/40 text-green-500' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
                         <Check className="w-3.5 h-3.5" />
                       </div>
                       <span className="text-xs font-semibold">{perm.label}</span>
@@ -521,11 +521,11 @@ export default function UserProfile() {
               </div>
 
               {/* Theme & Language Selector */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-gray-150/40 dark:border-gray-700/50 pb-5">
-                <div className="p-4 bg-gray-50/50 dark:bg-gray-850/10 border border-gray-150/50 dark:border-gray-800/40 rounded-2xl space-y-3.5 flex flex-col justify-between">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-gray-200/40 dark:border-gray-700/50 pb-5">
+                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/10 border border-gray-200/50 dark:border-gray-800/40 rounded-2xl space-y-3.5 flex flex-col justify-between">
                   <div>
                     <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Interface Theme</h3>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-450 leading-relaxed mt-0.5">Toggle interface aesthetics between light and dark modes.</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">Toggle interface aesthetics between light and dark modes.</p>
                   </div>
                   <button
                     onClick={toggleTheme}
@@ -546,10 +546,10 @@ export default function UserProfile() {
                   </button>
                 </div>
 
-                <div className="p-4 bg-gray-50/50 dark:bg-gray-850/10 border border-gray-150/50 dark:border-gray-800/40 rounded-2xl space-y-3.5 flex flex-col justify-between">
+                <div className="p-4 bg-gray-50/50 dark:bg-gray-800/10 border border-gray-200/50 dark:border-gray-800/40 rounded-2xl space-y-3.5 flex flex-col justify-between">
                   <div>
                     <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Language Selection</h3>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-455 leading-relaxed mt-0.5">Choose preferred localization for diagnostic cards & reports.</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">Choose preferred localization for diagnostic cards & reports.</p>
                   </div>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
@@ -570,10 +570,10 @@ export default function UserProfile() {
               </div>
 
               {/* Notification Toggles */}
-              <div className="border-b border-gray-150/40 dark:border-gray-700/50 pb-5 space-y-3.5">
+              <div className="border-b border-gray-200/40 dark:border-gray-700/50 pb-5 space-y-3.5">
                 <div>
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Notification Channels</h3>
-                  <p className="text-[10px] text-gray-505 dark:text-gray-450 leading-relaxed mt-0.5">Configure priority routes for vital reminders and campaigns.</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">Configure priority routes for vital reminders and campaigns.</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {[
@@ -584,11 +584,11 @@ export default function UserProfile() {
                   ].map(item => (
                     <label
                       key={item.key}
-                      className="flex items-center justify-between p-3.5 bg-gray-50/20 dark:bg-gray-850/5 border border-gray-150/40 dark:border-gray-800/25 rounded-2xl cursor-pointer select-none hover:border-gray-250 dark:hover:border-gray-750 transition-colors"
+                      className="flex items-center justify-between p-3.5 bg-gray-50/20 dark:bg-gray-800/5 border border-gray-200/40 dark:border-gray-800/25 rounded-2xl cursor-pointer select-none hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
                     >
                       <div className="min-w-0 pr-2">
                         <span className="text-xs font-extrabold text-gray-900 dark:text-white block">{item.label}</span>
-                        <span className="text-[10px] text-gray-500 dark:text-gray-455 block mt-0.5">{item.desc}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">{item.desc}</span>
                       </div>
                       <input
                         type="checkbox"
@@ -602,10 +602,10 @@ export default function UserProfile() {
               </div>
 
               {/* Privacy Settings */}
-              <div className="border-b border-gray-150/40 dark:border-gray-700/50 pb-5 space-y-3.5">
+              <div className="border-b border-gray-200/40 dark:border-gray-700/50 pb-5 space-y-3.5">
                 <div>
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Data Privacy & Security</h3>
-                  <p className="text-[10px] text-gray-550 dark:text-gray-455 leading-relaxed mt-0.5">Control access scopes of your personal medical history records.</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">Control access scopes of your personal medical history records.</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {[
@@ -616,11 +616,11 @@ export default function UserProfile() {
                   ].map(item => (
                     <label
                       key={item.key}
-                      className="flex items-center justify-between p-3.5 bg-gray-50/20 dark:bg-gray-850/5 border border-gray-150/40 dark:border-gray-800/25 rounded-2xl cursor-pointer select-none hover:border-gray-250 dark:hover:border-gray-700 transition-colors"
+                      className="flex items-center justify-between p-3.5 bg-gray-50/20 dark:bg-gray-800/5 border border-gray-200/40 dark:border-gray-800/25 rounded-2xl cursor-pointer select-none hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
                     >
                       <div className="min-w-0 pr-2">
                         <span className="text-xs font-extrabold text-gray-900 dark:text-white block">{item.label}</span>
-                        <span className="text-[10px] text-gray-500 dark:text-gray-455 block mt-0.5">{item.desc}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 block mt-0.5">{item.desc}</span>
                       </div>
                       <input
                         type="checkbox"
@@ -638,12 +638,12 @@ export default function UserProfile() {
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Connected Health Devices</h3>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-455 leading-relaxed mt-0.5">Pair wearable activity meters or BP monitors to sync vitals logs.</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">Pair wearable activity meters or BP monitors to sync vitals logs.</p>
                   </div>
                   <button
                     onClick={handlePairNewDevice}
                     type="button"
-                    className="py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-650 dark:bg-emerald-950/20 dark:text-emerald-450 border border-emerald-100/10 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer active:scale-95"
+                    className="py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100/10 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all cursor-pointer active:scale-95"
                   >
                     Pair Device
                   </button>
@@ -653,15 +653,15 @@ export default function UserProfile() {
                   {connectedDevices.map(dev => (
                     <div
                       key={dev.id}
-                      className="p-4 bg-gray-50/20 dark:bg-gray-850/5 border border-gray-150/45 dark:border-gray-800/25 rounded-2xl flex items-center justify-between gap-4"
+                      className="p-4 bg-gray-50/20 dark:bg-gray-800/5 border border-gray-200/45 dark:border-gray-800/25 rounded-2xl flex items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-550 dark:text-gray-400 shrink-0">
+                        <div className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-500 dark:text-gray-400 shrink-0">
                           {dev.type === 'Smartwatch' ? <Smartphone className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
                         </div>
                         <div className="min-w-0">
                           <span className="text-xs font-extrabold text-gray-900 dark:text-white block">{dev.name}</span>
-                          <span className="text-[9px] text-gray-450 dark:text-gray-405 block mt-0.5">{dev.type} • Sync: {dev.lastSync}</span>
+                          <span className="text-[9px] text-gray-400 dark:text-gray-400 block mt-0.5">{dev.type} • Sync: {dev.lastSync}</span>
                         </div>
                       </div>
 
@@ -679,7 +679,7 @@ export default function UserProfile() {
                           onClick={() => handleDeviceAction(dev.id, 'sync')}
                           disabled={dev.status !== 'Connected'}
                           type="button"
-                          className="py-1 px-2.5 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-250 font-bold rounded-lg text-[9px] uppercase tracking-wider transition-colors border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                          className="py-1 px-2.5 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-lg text-[9px] uppercase tracking-wider transition-colors border border-gray-200 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
                         >
                           Sync
                         </button>
@@ -687,7 +687,7 @@ export default function UserProfile() {
                         <button
                           onClick={() => handleDeviceAction(dev.id, 'toggle')}
                           type="button"
-                          className="p-1 text-red-500 hover:text-red-750 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer active:scale-95"
+                          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer active:scale-95"
                           title={dev.status === 'Connected' ? 'Disconnect' : 'Connect'}
                         >
                           <Link2 className="w-4 h-4 rotate-45" />

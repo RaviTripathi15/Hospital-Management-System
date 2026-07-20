@@ -68,12 +68,12 @@ export default function StaffDashboard() {
           <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white mt-1">
             Welcome, Health Staff
           </h1>
-          <p className="text-xs text-gray-505 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Logged in: {user?.firstName} {user?.lastName} • Manage your medical schedules and inventory.
           </p>
         </div>
         <div className="text-right sm:text-right flex flex-col items-end">
-          <p className="text-lg font-bold font-mono text-primary-600 dark:text-primary-450 leading-none">
+          <p className="text-lg font-bold font-mono text-primary-600 dark:text-primary-400 leading-none">
             {liveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
           <p className="text-[10px] text-gray-400 mt-1">
@@ -86,14 +86,14 @@ export default function StaffDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {[
           { label: 'Active Patients', value: '184', icon: Users, color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-          { label: "Today's Consultations", value: '23', icon: Calendar, color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-450' },
-          { label: 'Bed Occupancy', value: '82%', icon: Activity, color: 'bg-indigo-500/10 text-indigo-650 dark:text-indigo-400' },
-          { label: 'Low Stock Medicines', value: '12 Items', icon: Package, color: 'bg-amber-500/10 text-amber-600 dark:text-amber-450' }
+          { label: "Today's Consultations", value: '23', icon: Calendar, color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+          { label: 'Bed Occupancy', value: '82%', icon: Activity, color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' },
+          { label: 'Low Stock Medicines', value: '12 Items', icon: Package, color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' }
         ].map((stat, i) => (
           <motion.div
             key={i}
             whileHover={{ y: -2 }}
-            className="card p-5 bg-white dark:bg-gray-800 border border-gray-150/60 dark:border-gray-700/60 flex items-center gap-4 shadow-soft"
+            className="card p-5 bg-white dark:bg-gray-800 border border-gray-200/60 dark:border-gray-700/60 flex items-center gap-4 shadow-soft"
           >
             <div className={cn("p-3 rounded-2xl flex-shrink-0", stat.color)}>
               <stat.icon className="w-6 h-6" />
@@ -110,11 +110,11 @@ export default function StaffDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Patient visit flow chart - 8 cols */}
-        <div className="lg:col-span-8 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft">
+        <div className="lg:col-span-8 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-soft">
           <div className="flex justify-between items-center mb-5">
             <div>
               <h3 className="text-sm font-bold text-gray-950 dark:text-white">Daily Patient Inflow</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-450">Realtime tracking of general consultations and emergency visits.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Realtime tracking of general consultations and emergency visits.</p>
             </div>
             <div className="flex gap-4 text-xs font-bold text-gray-500">
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary-500" /> General</span>
@@ -142,7 +142,7 @@ export default function StaffDashboard() {
         </div>
 
         {/* Quick Operations Checklist - 4 cols */}
-        <div className="lg:col-span-4 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft">
+        <div className="lg:col-span-4 bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-soft">
           <h3 className="text-sm font-bold text-gray-950 dark:text-white mb-4">Operations Checklist</h3>
           <div className="space-y-3.5">
             {[
@@ -156,13 +156,13 @@ export default function StaffDashboard() {
                   "w-5 h-5 rounded-md border flex items-center justify-center transition-colors cursor-pointer",
                   chk.done
                     ? "bg-emerald-500 border-emerald-500 text-white"
-                    : "border-gray-300 dark:border-gray-650 hover:bg-gray-50 dark:hover:bg-gray-750 text-transparent"
+                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-transparent"
                 )}>
                   <CheckSquare className="w-3.5 h-3.5" />
                 </button>
                 <span className={cn(
                   "text-xs font-medium leading-tight",
-                  chk.done ? "text-gray-400 line-through" : "text-gray-750 dark:text-gray-250"
+                  chk.done ? "text-gray-400 line-through" : "text-gray-700 dark:text-gray-200"
                 )}>
                   {chk.text}
                 </span>
@@ -174,7 +174,7 @@ export default function StaffDashboard() {
       </div>
 
       {/* Staff Actions Grid */}
-      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-200/60 dark:border-gray-700/60 shadow-soft">
         <h3 className="text-sm font-bold text-gray-950 dark:text-white mb-1">Administrative Actions</h3>
         <p className="text-xs text-gray-500 dark:text-gray-400">Manage patient records and daily facilities schedules.</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
@@ -187,7 +187,7 @@ export default function StaffDashboard() {
             <button
               key={i}
               onClick={() => navigate(action.path)}
-              className="p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-850/60 dark:hover:bg-gray-800 border border-gray-150/60 dark:border-gray-700/60 text-left transition-all group cursor-pointer active:scale-95"
+              className="p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 border border-gray-200/60 dark:border-gray-700/60 text-left transition-all group cursor-pointer active:scale-95"
             >
               <p className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{action.label}</p>
               <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-0.5 font-semibold">

@@ -155,7 +155,7 @@ export default function ReportDetail() {
         <div className="lg:col-span-2 space-y-6">
           {/* Metrics Card */}
           <div className="card p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-850 pb-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-2">
               Reported Metrics
             </h2>
 
@@ -219,7 +219,7 @@ export default function ReportDetail() {
 
             {/* Notes */}
             {report.notes && (
-              <div className="pt-4 border-t border-gray-100 dark:border-gray-850">
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
                   Remarks / Notes
                 </h3>
@@ -232,7 +232,7 @@ export default function ReportDetail() {
 
           {/* Rejection notice if rejected */}
           {report.status === 'rejected' && (
-            <div className="bg-red-50 dark:bg-red-950/20 border border-red-150 dark:border-red-900/40 p-4 rounded-xl flex items-start gap-3">
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 p-4 rounded-xl flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
               <div>
                 <h4 className="font-semibold text-sm text-red-800 dark:text-red-300">
@@ -276,7 +276,7 @@ export default function ReportDetail() {
               </div>
 
               {report.approvedBy && (
-                <div className="flex items-start gap-3 text-sm border-t border-gray-100 dark:border-gray-850 pt-3">
+                <div className="flex items-start gap-3 text-sm border-t border-gray-100 dark:border-gray-800 pt-3">
                   <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
                   <div>
                     <p className="text-xs text-gray-500">Reviewed By</p>

@@ -7,6 +7,8 @@ import {
 import { cn } from '@/utils/cn'
 import toast from 'react-hot-toast'
 
+import { useSearchParams } from 'react-router-dom'
+
 // Mock records with verified clinical statuses and metadata
 const MOCK_RECORDS = [
   {
@@ -19,7 +21,7 @@ const MOCK_RECORDS = [
     format: 'PDF',
     size: '1.8 MB',
     status: 'Signed',
-    statusColor: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-250/20',
+    statusColor: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/40',
     tags: ['Lab', 'Diagnostic'],
     details: {
       summary: 'Blood chemistry analysis measuring cholesterol levels.',
@@ -37,7 +39,7 @@ const MOCK_RECORDS = [
     format: 'Digital RX',
     size: '120 KB',
     status: 'Active RX',
-    statusColor: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 border-indigo-250/20',
+    statusColor: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200/40',
     tags: ['Prescription', 'Oral'],
     details: {
       summary: 'Oral glycemic control prescription for Type-2 Diabetes management.',
@@ -55,7 +57,7 @@ const MOCK_RECORDS = [
     format: 'DICOM/PDF',
     size: '14.5 MB',
     status: 'Verified',
-    statusColor: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-250/20',
+    statusColor: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/40',
     tags: ['Imaging', 'Radiology'],
     details: {
       summary: 'Chest radiographic examination evaluating lungs, mediastinum, and chest wall.',
@@ -73,7 +75,7 @@ const MOCK_RECORDS = [
     format: 'DICOM',
     size: '28.2 MB',
     status: 'Synced',
-    statusColor: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20 border-blue-250/20',
+    statusColor: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20 border-blue-200/40',
     tags: ['Imaging', 'MRI'],
     details: {
       summary: 'Magnetic resonance imaging scan of cerebral structures.',
@@ -91,7 +93,7 @@ const MOCK_RECORDS = [
     format: 'Credential',
     size: '520 KB',
     status: 'NHM Signed',
-    statusColor: 'text-emerald-650 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-250/20',
+    statusColor: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/40',
     tags: ['Certificate', 'Verifiable'],
     details: {
       summary: 'Digital certificate confirming administration of COVID-19 booster vaccine dose.',
@@ -103,9 +105,20 @@ const MOCK_RECORDS = [
 
 export default function MedicalRecords({ reports = [], userName }) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedFilter, setSelectedFilter] = useState('all')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedFilter = searchParams.get('tab') || 'all'
   const [viewingRecord, setViewingRecord] = useState(null)
   const [downloadingId, setDownloadingId] = useState(null)
+
+  const handleTabChange = (newTab) => {
+    const newParams = new URLSearchParams(searchParams)
+    if (newTab === 'all') {
+      newParams.delete('tab')
+    } else {
+      newParams.set('tab', newTab)
+    }
+    setSearchParams(newParams, { replace: true })
+  }
 
   // Map real database patient report entries if they exist
   const getMappedRecords = () => {
@@ -260,39 +273,40 @@ export default function MedicalRecords({ reports = [], userName }) {
 
         {/* Search */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 text-slate-450 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search records, facilities, clinicians..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full input-field pl-9 pr-4 py-1.5 text-xs bg-slate-50/50 focus:bg-white dark:bg-[#090d16]/30 focus:dark:bg-[#090d16]/60 border border-slate-200 dark:border-[#1e2d4a]/85 rounded-lg"
+            className="w-full input-field pl-9 pr-4 py-1.5 text-xs bg-slate-50/50 focus:bg-white dark:bg-[#090d16]/30 focus:dark:bg-[#090d16]/60 border border-slate-200 dark:border-[#1e2d4a] rounded-xl"
           />
         </div>
       </div>
 
       {/* Tabs Filter */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-50 dark:border-[#1e2d4a]/20">
+      <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-hide border-b border-slate-200/60 dark:border-[#1e2d4a]/60">
         {[
           { id: 'all', label: 'All Files' },
           { id: 'prescription', label: 'Prescriptions' },
           { id: 'lab', label: 'Lab Reports' },
           { id: 'imaging', label: 'Imaging' },
           { id: 'certificate', label: 'Certificates' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSelectedFilter(tab.id)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-[11px] font-bold shrink-0 transition-all border cursor-pointer active:scale-95",
-              selectedFilter === tab.id
-                ? "bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 border-slate-800 dark:border-slate-200 shadow-sm"
-                : "bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-350 border-slate-200/50 dark:border-[#1e2d4a]/30"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+        ].map((tab) => {
+          const isActive = selectedFilter === tab.id
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              data-state={isActive ? 'active' : 'inactive'}
+              onClick={() => handleTabChange(tab.id)}
+              className="tab-pill"
+            >
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Enterprise-grade Info-dense Cards Grid */}

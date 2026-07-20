@@ -130,7 +130,7 @@ export default function CreateReport() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-850 pb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-2">
             General Information
           </h2>
 
@@ -208,7 +208,7 @@ export default function CreateReport() {
 
         {/* Metrics Card */}
         <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-850 pb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-2">
             Key Metrics
           </h2>
 
@@ -313,7 +313,7 @@ export default function CreateReport() {
 
         {/* Notes */}
         <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-850 pb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-2">
             Clinical Notes / Remarks
           </h2>
           <div>
