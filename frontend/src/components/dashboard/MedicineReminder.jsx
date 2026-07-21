@@ -200,15 +200,18 @@ export default function MedicineReminder({ prescriptions = [] }) {
               ].map((tab) => (
                 <button
                   key={tab.id}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  data-state={activeTab === tab.id ? 'active' : 'inactive'}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "py-2 px-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wider border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer relative",
+                    "py-2 px-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wider border flex flex-col items-center justify-center gap-1 transition-all duration-200 cursor-pointer relative opacity-100",
                     activeTab === tab.id
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-soft"
-                      : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-750 text-gray-500 dark:text-gray-400 border-gray-150/60 dark:border-gray-700/60"
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-500/20 dark:bg-indigo-600 dark:text-white dark:border-indigo-500 dark:ring-indigo-400/30"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white dark:border-slate-700 dark:hover:border-slate-600"
                   )}
                 >
-                  <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-white animate-bounce-slow" : "text-gray-400")} />
+                  <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-white animate-bounce-slow" : "text-slate-500 dark:text-slate-300")} />
                   <span>{tab.label}</span>
                   {tab.count > 0 && (
                     <span className={cn(

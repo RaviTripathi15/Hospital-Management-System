@@ -282,13 +282,13 @@ export default function UserProfile() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 flex-wrap">
+      <div className="flex border-b border-slate-200 dark:border-[#1e2d4a] flex-wrap">
         <button
           onClick={() => setActiveTab('profile')}
-          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 font-bold text-sm border-b-2 transition-all duration-200 cursor-pointer ${
             activeTab === 'profile'
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-extrabold'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600'
           }`}
         >
           <User className="w-4 h-4" />
@@ -296,10 +296,10 @@ export default function UserProfile() {
         </button>
         <button
           onClick={() => setActiveTab('security')}
-          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 font-bold text-sm border-b-2 transition-all duration-200 cursor-pointer ${
             activeTab === 'security'
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-extrabold'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600'
           }`}
         >
           <Shield className="w-4 h-4" />
@@ -307,10 +307,10 @@ export default function UserProfile() {
         </button>
         <button
           onClick={() => setActiveTab('role')}
-          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 font-bold text-sm border-b-2 transition-all duration-200 cursor-pointer ${
             activeTab === 'role'
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-extrabold'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600'
           }`}
         >
           <ArrowLeftRight className="w-4 h-4" />
@@ -318,10 +318,10 @@ export default function UserProfile() {
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 font-bold text-sm border-b-2 transition-all duration-200 cursor-pointer ${
             activeTab === 'settings'
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-extrabold'
+              : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600'
           }`}
         >
           <Settings className="w-4 h-4" />

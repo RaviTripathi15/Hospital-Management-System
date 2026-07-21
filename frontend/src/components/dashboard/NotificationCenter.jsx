@@ -158,13 +158,11 @@ export default function NotificationCenter() {
         ].map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            data-state={activeTab === tab.id ? 'active' : 'inactive'}
             onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition-all border cursor-pointer active:scale-95",
-              activeTab === tab.id
-                ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                : "bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200/40 dark:border-gray-700/30"
-            )}
+            className="tab-pill shrink-0"
           >
             {tab.label}
           </button>

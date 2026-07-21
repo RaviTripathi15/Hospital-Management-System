@@ -486,27 +486,27 @@ export default function BedManagement() {
       </div>
 
       {/* Tabs Menu */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 gap-6">
+      <div className="flex border-b border-slate-200 dark:border-[#1e2d4a] gap-6">
         <button
           onClick={() => setActiveTab('current')}
-          className={`pb-3 font-semibold text-sm transition-all relative ${
-            activeTab === 'current' ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600'
+          className={`pb-3 font-bold text-sm transition-all duration-200 cursor-pointer relative ${
+            activeTab === 'current' ? 'text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
           }`}
         >
           Active Admitted Patients
           {activeTab === 'current' && (
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600" />
+            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 dark:bg-primary-400 rounded-full" />
           )}
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`pb-3 font-semibold text-sm transition-all relative ${
-            activeTab === 'history' ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600'
+          className={`pb-3 font-bold text-sm transition-all duration-200 cursor-pointer relative ${
+            activeTab === 'history' ? 'text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
           }`}
         >
           Admissions History Log
           {activeTab === 'history' && (
-            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600" />
+            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-600 dark:bg-primary-400 rounded-full" />
           )}
         </button>
       </div>

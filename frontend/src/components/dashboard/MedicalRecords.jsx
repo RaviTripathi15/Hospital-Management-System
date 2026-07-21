@@ -541,7 +541,7 @@ export default function MedicalRecords({ reports = [], userName }) {
               <div className="mt-5 pt-3.5 border-t border-slate-100/55 dark:border-[#1e2d4a]/20 flex justify-end gap-3 shrink-0">
                 <button
                   onClick={() => setViewingRecord(null)}
-                  className="px-4 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-350 font-extrabold rounded-lg text-xs uppercase tracking-wider transition-colors border border-slate-200 dark:border-[#1e2d4a]/85 cursor-pointer active:scale-95"
+                  className="px-4 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold rounded-lg text-xs uppercase tracking-wider transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95"
                 >
                   Close
                 </button>

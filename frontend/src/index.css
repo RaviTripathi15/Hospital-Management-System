@@ -151,17 +151,17 @@
 
   /* Tabs System Classes with Guaranteed Active State Pill */
   .tab-pill {
-    @apply px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 border cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 active:scale-95;
+    @apply px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 border cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 active:scale-95 opacity-100;
   }
 
   .tab-pill[data-state="active"],
   .tab-pill[aria-selected="true"] {
-    @apply bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-md font-extrabold;
+    @apply bg-emerald-600 text-white dark:bg-emerald-600 dark:text-white border-emerald-600 dark:border-emerald-500 shadow-md font-extrabold ring-2 ring-emerald-500/20 dark:ring-emerald-400/30;
   }
 
   .tab-pill[data-state="inactive"],
   .tab-pill[aria-selected="false"] {
-    @apply bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 dark:bg-slate-800/50 dark:hover:bg-slate-800 dark:text-slate-300 border-transparent;
+    @apply bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white dark:border-slate-700 dark:hover:border-slate-600 opacity-100;
   }
 }
 

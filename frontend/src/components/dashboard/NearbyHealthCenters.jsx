@@ -136,13 +136,11 @@ export default function NearbyHealthCenters({ centers = [] }) {
         ].map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeFilter === tab.id}
+            data-state={activeFilter === tab.id ? 'active' : 'inactive'}
             onClick={() => setActiveFilter(tab.id)}
-            className={cn(
-              "px-4 py-2 rounded-lg text-xs font-bold shrink-0 transition-all border cursor-pointer active:scale-95",
-              activeFilter === tab.id
-                ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                : "bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-350 border-slate-200/50 dark:border-slate-800/30"
-            )}
+            className="tab-pill shrink-0"
           >
             {tab.label}
           </button>

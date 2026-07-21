@@ -104,10 +104,10 @@ export default function RoleRequestsManager() {
           <button
             key={tab.value}
             onClick={() => setStatusFilter(tab.value)}
-            className={`px-4 py-2.5 font-medium text-sm border-b-2 transition-all ${
+            className={`px-4 py-2.5 font-bold text-sm border-b-2 transition-all duration-200 cursor-pointer ${
               statusFilter === tab.value
-                ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-extrabold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600'
             }`}
           >
             {tab.label}
