@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Send, Trash2, HelpCircle, Activity, Pill, Building2, Info, AlertTriangle } from 'lucide-react'
+import {
+  Sparkles, Send, Trash2, HelpCircle, Activity, Pill, Building2,
+  Info, AlertTriangle, Copy, Check, ThumbsUp, ThumbsDown, Mic, Paperclip, Square, Clock, Bot, User
+} from 'lucide-react'
 import aiService from '@/services/aiService'
+import toast from 'react-hot-toast'
 import { cn } from '@/utils/cn'
 
 // Local health tips for client-side fallback
@@ -14,48 +18,69 @@ const FALLBACK_TIPS = [
   "Remember to rest your eyes if you work on computers (20-20-20 rule)."
 ]
 
-// Simple helper to parse basic markdown to HTML safely
+// Suggested Quick Questions
+const QUICK_PROMPTS = [
+  "What to do for fever?",
+  "Healthy Indian diet plan",
+  "How to lower blood pressure?",
+  "Daily workout recommendations"
+]
+
+// Markdown parser helper for rich chat bubbles
 const parseMarkdown = (text) => {
   if (!text) return ''
   
-  // Escape HTML characters
   let html = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
   
-  // Headers (### text)
-  html = html.replace(/^###\s+(.+)$/gm, '<h4 class="text-sm font-black text-gray-900 dark:text-white mt-3 mb-1.5 flex items-center gap-1 border-b border-gray-150/50 dark:border-gray-700/50 pb-1">$1</h4>')
-  
-  // Bold (**text**)
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="font-extrabold text-gray-955 dark:text-white">$1</strong>')
-  
-  // Bullet points (- text)
-  html = html.replace(/^-\s+(.+)$/gm, '<li class="ml-4 list-disc text-xs text-gray-700 dark:text-gray-300 mt-1">$1</li>')
-  
-  // Double newlines to paragraphs
+  html = html.replace(/^###\s+(.+)$/gm, '<h4 class="text-xs md:text-sm font-bold text-slate-900 dark:text-white mt-2.5 mb-1 flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-700 pb-1">$1</h4>')
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="font-extrabold text-slate-950 dark:text-white">$1</strong>')
+  html = html.replace(/^-\s+(.+)$/gm, '<li class="ml-3 list-disc text-xs text-slate-700 dark:text-slate-200 mt-0.5">$1</li>')
   html = html.replace(/\n\n/g, '<div class="h-2"></div>')
-  
-  // Single newlines to linebreaks
   html = html.replace(/\n/g, '<br />')
   
-  return <div dangerouslySetInnerHTML={{ __html: html }} className="space-y-1 text-xs leading-relaxed" />
+  return <div dangerouslySetInnerHTML={{ __html: html }} className="space-y-1 text-xs md:text-sm leading-relaxed" />
+}
+
+// Format timestamp
+const formatTime = (isoString) => {
+  if (!isoString) return ''
+  try {
+    const d = new Date(isoString)
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } catch (e) {
+    return ''
+  }
 }
 
 export default function AIHealthAssistant({ patientProfile = null, nearbyCenters = [] }) {
   const [chatMessages, setChatMessages] = useState([
     {
       sender: 'ai',
-      text: 'Hello! I am your AI Health Assistant. How can I help you today? Ask me about symptoms, medicines, local PHC recommendations, or health tips.',
+      text: 'Hello! I am your AI Health Assistant. Ask me anything about diet, symptoms, medicines, or wellness tips.',
       timestamp: new Date().toISOString()
     }
   ])
   const [chatInput, setChatInput] = useState('')
   const [chatIsTyping, setChatIsTyping] = useState(false)
-  const [connectionState, setConnectionState] = useState('connected') // connected, local
-  const chatEndRef = useRef(null)
+  const [copiedId, setCopiedId] = useState(null)
+  const [feedbackState, setFeedbackState] = useState({})
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false)
 
-  // Scroll to bottom on new messages
+  const chatEndRef = useRef(null)
+  const textareaRef = useRef(null)
+
+  // Auto expand textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`
+    }
+  }, [chatInput])
+
+  // Scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages, chatIsTyping])
@@ -76,331 +101,333 @@ export default function AIHealthAssistant({ patientProfile = null, nearbyCenters
 
     if (cleanText.includes('fever') || cleanText.includes('temp') || cleanText.includes('chills')) {
       responseText = `### 🤒 Symptom Checker: Fever & Temperature
-A fever is typically a sign that your body is fighting off an infection (viral or bacterial).
+A fever is typically a sign that your body is fighting off an infection.
 
 **What to do:**
-- **Stay Hydrated:** Drink plenty of fluids (water, clear broths, oral rehydration solutions).
+- **Stay Hydrated:** Drink plenty of fluids (water, clear broths, ORS).
 - **Rest:** Avoid heavy physical exertion.
-- **Monitor:** Check your temperature every 4-6 hours.
-- **Medication:** Over-the-counter paracetamol can help reduce fever. Follow dosage guidelines.
+- **Medication:** Over-the-counter paracetamol can help. Follow dosage guidelines.
 
 **⚠️ Warning Signs (Consult a Doctor Immediately):**
-- Fever exceeds 102°F (38.9°C) or lasts more than 3 days.
-- Accompanied by severe headache, stiff neck, shortness of breath, or confusion.`
+- Fever exceeds 102°F (38.9°C) or lasts over 3 days.`
     } else if (cleanText.includes('headache') || cleanText.includes('migraine')) {
       responseText = `### 🧠 Symptom Checker: Headaches
-Headaches are very common and can stem from multiple causes, including dehydration, stress, lack of sleep, or eye strain.
+Headaches often stem from dehydration, eye strain, lack of sleep, or stress.
 
 **What to do:**
-- **Hydrate:** Drink a large glass of water, as dehydration is a primary trigger.
-- **Rest:** Relax in a quiet, dark room. Apply a cool compress to your forehead.
-- **Limit Screens:** Take a break from mobile phones and laptops.
+- **Hydrate:** Drink a large glass of water.
+- **Rest:** Relax in a quiet, dark room.
+- **Limit Screens:** Take a break from mobile phones and laptops.`
+    } else if (cleanText.includes('diet') || cleanText.includes('food') || cleanText.includes('nutrition')) {
+      responseText = `### 🥗 Nutrition & Diet Plan
+A balanced diet supports daily energy and long-term health.
 
-**⚠️ Warning Signs (Emergency Care Required):**
-- A sudden, extremely severe headache ("thunderclap").
-- Headache accompanied by fever, stiff neck, confusion, or difficulty speaking.`
-    } else if (cleanText.includes('cough') || cleanText.includes('cold') || cleanText.includes('sore throat') || cleanText.includes('flu')) {
-      responseText = `### 🤧 Symptom Checker: Cough, Cold, & Sore Throat
-Most respiratory tract symptoms are viral and resolve on their own within 7-10 days.
-
-**What to do:**
-- **Warm Liquids:** Drink herbal teas, warm water with honey, or clear soups to soothe the throat.
-- **Steam Inhalation:** Inhale steam from a bowl of hot water to relieve congestion.
-- **Saltwater Gargle:** Gargle with warm salt water (1/2 tsp salt in warm water) 3-4 times a day.
-
-**⚠️ Warning Signs (See a Doctor):**
-- Difficulty breathing, persistent wheezing, or chest tightness.
-- Symptoms that worsen significantly after starting to improve, or persist beyond 10 days.`
-    } else if (cleanText.includes('stomach') || cleanText.includes('pain') || cleanText.includes('nausea') || cleanText.includes('diarrhea') || cleanText.includes('vomit')) {
-      responseText = `### 🤢 Symptom Checker: Gastrointestinal Issues
-Indigestion, food poisoning, or stomach flu can cause cramping, nausea, vomiting, or diarrhea.
-
-**What to do:**
-- **Sip Liquids:** Drink small sips of water, dilute juices, or Oral Rehydration Salts (ORS) to prevent dehydration.
-- **Bland Diet:** Eat light, binding foods like bananas, rice, applesauce, or toast.
-- **Avoid Triggers:** Stay away from dairy, caffeine, spicy, or fatty foods.
-
-**⚠️ Warning Signs (Seek Urgent Care):**
-- Severe, localized abdominal pain (especially in the lower right side).
-- Inability to keep any liquids down for more than 24 hours.`
-    } else if (cleanText.includes('paracetamol') || cleanText.includes('acetaminophen') || cleanText.includes('crocin') || cleanText.includes('dolo')) {
-      responseText = `### 💊 Medicine Info: Paracetamol
-Paracetamol is a widely used over-the-counter analgesic (pain reliever) and antipyretic (fever reducer).
-
-- **Common Uses:** Pain relief (headaches, muscle aches, toothaches) and reducing fever.
-- **Standard Adult Dosage:** 500mg - 1000mg every 4 to 6 hours as needed.
-- **Maximum Limit:** **Do not exceed 4000mg (4g) in a 24-hour period.**
-- **Precautions:** Excess usage can cause severe liver damage. Avoid alcohol and check other cold medications to avoid duplication.`
-    } else if (cleanText.includes('metformin')) {
-      responseText = `### 💊 Medicine Info: Metformin
-Metformin is an oral medication used to manage blood glucose levels in patients with Type 2 Diabetes.
-
-- **How it Works:** It improves insulin sensitivity and reduces glucose absorption in the gut.
-- **Dosage Guidelines:** Always follow your physician's prescription. Typically taken **with meals** to minimize gastrointestinal discomfort.
-- **Precautions:** Avoid excessive alcohol intake while taking Metformin to minimize the rare risk of lactic acidosis.`
-    } else if (cleanText.includes('atorvastatin') || cleanText.includes('statin')) {
-      responseText = `### 💊 Medicine Info: Atorvastatin
-Atorvastatin lowers cholesterol and triglycerides to reduce the risk of heart disease.
-
-- **Dosage:** Taken once daily, usually in the evening. Dosages range from 10mg to 80mg depending on medical history.
-- **Precautions:** Inform your doctor immediately if you experience unexplained muscle pain, tenderness, or weakness.`
-    } else if (cleanText.includes('medicine') || cleanText.includes('drug') || cleanText.includes('prescription')) {
-      if (activePrescriptions.length > 0) {
-        const medsList = activePrescriptions.map((m, i) => `${i + 1}. **${m.medicine}** (${m.dosage})`).join('\n')
-        responseText = `### 📋 Your Active Prescriptions
-Based on your clinical record, you are prescribed:
-${medsList}
-
-*For safety, always follow the dosage instructions on the packaging. Consult your PHC provider before modifying your treatment plan.*`
-      } else {
-        responseText = `### 💊 General Medicine Safety
-I can provide information on common medications like Paracetamol, Metformin, and Atorvastatin.
-
-**Key Safety Rules:**
-- Always complete the course of antibiotics as prescribed.
-- Never share prescription medications.
-- Store drugs in a cool, dry place out of reach of children.`
-      }
-    } else if (cleanText.includes('phc') || cleanText.includes('center') || cleanText.includes('clinic') || cleanText.includes('recommend') || cleanText.includes('nearby')) {
-      if (nearbyCenters && nearbyCenters.length > 0) {
-        const list = nearbyCenters.slice(0, 3).map((c, i) => {
-          return `${i + 1}. **${c.name}** (${c.type})
-   - Block: ${c.block}, District: ${c.district}
-   - Contact: ${c.contactNumber || 'Not available'}`
-        }).join('\n\n')
-        responseText = `### 🏥 Recommended Local Health Centers
-Based on your registered district, we recommend visiting:
-
-${list}
-
-*You can schedule appointments or check doctor schedules in the Health Centers tab on your dashboard.*`
-      } else {
-        responseText = `### 🏥 Nearby Health Centers
-I recommend seeking medical consultations at your nearest Primary Health Center (PHC).
-
-- You can search for nearby clinics by clicking **Find Nearby PHC** on your dashboard.
-- Select your district and block to see active centers, doctor timetables, and contact numbers.`
-      }
-    } else if (cleanText.includes('tip') || cleanText.includes('advice') || cleanText.includes('health tips') || cleanText.includes('lifestyle')) {
-      const randTip = FALLBACK_TIPS[Math.floor(Math.random() * FALLBACK_TIPS.length)]
-      responseText = `### 💡 Healthy Lifestyle Tip
-Here is a quick wellness tip for today:
-
-**${randTip}**
-
-*Small habits compound into major health benefits. Keep tracking your vitals to see your overall health score improve!*`
-    } else if (cleanText.includes('symptom') || cleanText.includes('check')) {
-      responseText = `### 🩺 Symptom Checker Assistance
-I can guide you on symptoms. Try asking me:
-- **"I have a fever"**
-- **"What to do for a stomach ache?"**
-- **"I have a cough and throat irritation"**
-
-*Disclaimer: This is for guidance only. For medical issues, visit a clinic or call 108 immediately.*`
+**Recommendations:**
+- **Proteins:** Include lentils (dal), paneer, eggs, or lean chicken.
+- **Fiber:** Eat whole grains (roti, brown rice) and green leafy vegetables.
+- **Hydration:** Consume buttermilk, coconut water, or fresh lemon water.`
     } else {
-      responseText = `I've received your query. I am operating in local fallback mode.
+      const randomTip = FALLBACK_TIPS[Math.floor(Math.random() * FALLBACK_TIPS.length)]
+      responseText = `Thank you for your question. Here is a wellness recommendation:
 
-Feel free to ask me about:
-- **Symptoms** (e.g. fever, headache, cough, stomach pain)
-- **Medicines** (e.g. Paracetamol, Metformin, Atorvastatin)
-- **Nearest PHCs** (clinical recommendations)
-- **Healthy Lifestyle Tips** (daily tips)
+**Health Tip:** ${randomTip}
 
-*For medical emergencies, please dial 108 immediately.*`
+If you are experiencing acute symptoms, please consult a medical practitioner or visit a nearby Health Center.`
     }
 
-    setChatMessages(prev => [...prev, {
-      sender: 'ai',
-      text: responseText,
-      timestamp: new Date().toISOString()
-    }])
-    setChatIsTyping(false)
+    return responseText
   }
 
-  const handleSendChatMessage = async (customText = null) => {
-    const textToSend = customText || chatInput
-    if (!textToSend || !textToSend.trim()) return
+  // Send message
+  const handleSendMessage = async (textToSend) => {
+    const messageText = (typeof textToSend === 'string' ? textToSend : chatInput).trim()
+    if (!messageText || chatIsTyping) return
 
-    // Append user message
-    const userMsg = { sender: 'user', text: textToSend, timestamp: new Date().toISOString() }
+    // 1. Append User message immediately
+    const userMsg = { sender: 'user', text: messageText, timestamp: new Date().toISOString() }
     setChatMessages(prev => [...prev, userMsg])
-    if (!customText) setChatInput('')
-    
-    // Show typing state
+    setChatInput('')
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
+
+    // 2. Show thinking indicator
     setChatIsTyping(true)
 
-    // Call backend API
     try {
-      const apiHistory = chatMessages.map(msg => ({
-        sender: msg.sender,
-        text: msg.text
-      }))
+      const historyPayload = chatMessages.map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text }))
+      const data = await aiService.chat(messageText, historyPayload)
 
-      const responseData = await aiService.chat(textToSend, apiHistory)
-      
-      if (responseData && responseData.data && responseData.data.reply) {
-        setChatMessages(prev => [...prev, {
-          sender: 'ai',
-          text: responseData.data.reply,
-          timestamp: new Date().toISOString()
-        }])
-        setConnectionState('connected')
-        setChatIsTyping(false)
-      } else {
-        throw new Error('Invalid API response format')
+      const aiMsg = {
+        sender: 'ai',
+        text: data.reply || data.message || data.text || handleClientSideResponse(messageText),
+        timestamp: new Date().toISOString()
       }
+      setChatMessages(prev => [...prev, aiMsg])
     } catch (err) {
-      console.warn("Backend AI chat unavailable, falling back to local responder", err)
-      setConnectionState('local')
-      setTimeout(() => {
-        handleClientSideResponse(textToSend)
-      }, 700)
+      console.warn('AI Service unavailable, using smart local fallback response', err)
+      const fallbackReply = handleClientSideResponse(messageText)
+      setChatMessages(prev => [...prev, {
+        sender: 'ai',
+        text: fallbackReply,
+        timestamp: new Date().toISOString()
+      }])
+    } finally {
+      setChatIsTyping(false)
+    }
+  }
+
+  // Keyboard shortcut Enter = Send, Shift+Enter = Newline
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
+
+  // Copy Message
+  const handleCopyMessage = (text, idx) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(idx)
+    toast.success('Copied to clipboard!')
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  // Feedback Like / Dislike
+  const handleFeedback = (idx, type) => {
+    setFeedbackState(prev => ({
+      ...prev,
+      [idx]: prev[idx] === type ? null : type
+    }))
+    if (feedbackState[idx] !== type) {
+      toast.success(type === 'liked' ? 'Thanks for your feedback!' : 'Feedback recorded')
+    }
+  }
+
+  // Clear chat
+  const handleClearChat = () => {
+    if (chatMessages.length <= 1) return
+    if (window.confirm('Clear current chat messages?')) {
+      setChatMessages([{
+        sender: 'ai',
+        text: 'Hello! I am your AI Health Assistant. How can I help you today?',
+        timestamp: new Date().toISOString()
+      }])
+    }
+  }
+
+  // Voice recording mock toggle
+  const handleToggleVoice = () => {
+    if (isVoiceRecording) {
+      setIsVoiceRecording(false)
+      toast.success('Voice input captured')
+    } else {
+      setIsVoiceRecording(true)
+      toast('Listening... Speak your query.')
+      setTimeout(() => setIsVoiceRecording(false), 3500)
     }
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-150/60 dark:border-gray-700/60 shadow-soft flex flex-col justify-between min-h-[440px] relative overflow-hidden group">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full blur-2xl pointer-events-none" />
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md flex flex-col h-[560px] relative overflow-hidden">
       
-      <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700/60">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 rounded-2xl">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+      {/* Widget Header */}
+      <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-900/80 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+            <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-gray-950 dark:text-white flex items-center gap-2">
-              AI Health Assistant
-              <span className="flex h-2 w-2 relative">
-                <span className={cn(
-                  "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                  connectionState === 'connected' ? "bg-emerald-400" : "bg-amber-400"
-                )}></span>
-                <span className={cn(
-                  "relative inline-flex rounded-full h-2 w-2",
-                  connectionState === 'connected' ? "bg-emerald-500" : "bg-amber-500"
-                )}></span>
-              </span>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <span>AI Health Assistant</span>
             </h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">
-                {connectionState === 'connected' ? 'Interactive Core' : 'Local Fallback'}
-              </p>
-              {connectionState === 'local' && (
-                <span className="text-[9px] bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-450 px-1.5 py-0.2 rounded font-bold uppercase tracking-widest flex items-center gap-0.5">
-                  <AlertTriangle className="w-2.5 h-2.5" /> offline
-                </span>
-              )}
-            </div>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+              Interactive Symptom & Wellness Companion
+            </p>
           </div>
         </div>
+
         <button
-          onClick={() => setChatMessages([
-            {
-              sender: 'ai',
-              text: 'Hello! I am your AI Health Assistant. How can I help you today? Ask me about symptoms, medicines, local PHC recommendations, or health tips.',
-              timestamp: new Date().toISOString()
-            }
-          ])}
-          title="Clear Conversation"
-          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all cursor-pointer"
+          onClick={handleClearChat}
+          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+          title="Clear Chat"
         >
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="flex-1 my-4 overflow-y-auto min-h-[220px] max-h-[300px] space-y-3.5 pr-2 bg-gray-50/40 dark:bg-gray-900/10 p-3.5 rounded-2xl border border-gray-100 dark:border-gray-800/40 custom-scrollbar">
-        {chatMessages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={cn(
-              "flex items-end gap-2.5",
-              msg.sender === 'user' ? "justify-end" : "justify-start"
-            )}
-          >
-            {msg.sender === 'ai' && (
-              <div className="w-7 h-7 bg-primary-50 dark:bg-primary-950/40 text-primary-500 rounded-full flex items-center justify-center shrink-0 border border-primary-100/50 dark:border-primary-900/10 text-xs">
-                <Sparkles className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
-              </div>
-            )}
-            <div
-              className={cn(
-                "p-3.5 rounded-2xl text-xs max-w-[85%] shadow-sm leading-relaxed",
-                msg.sender === 'user'
-                  ? "bg-primary-600 text-white rounded-br-none font-medium"
-                  : "bg-white dark:bg-gray-800 text-gray-850 dark:text-gray-250 rounded-bl-none border border-gray-150/65 dark:border-gray-700/60"
-              )}
-            >
-              {msg.sender === 'ai' ? parseMarkdown(msg.text) : msg.text}
-              <span className={cn(
-                "block text-[8px] mt-1 text-right",
-                msg.sender === 'user' ? "text-white/60" : "text-gray-400 dark:text-gray-500"
-              )}>
-                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          </div>
-        ))}
-        {chatIsTyping && (
-          <div className="flex items-end gap-2.5 justify-start">
-            <div className="w-7 h-7 bg-primary-50 dark:bg-primary-950/40 text-primary-500 rounded-full flex items-center justify-center shrink-0 border border-primary-100/50 dark:border-primary-900/10 text-xs">
-              <Sparkles className="w-3.5 h-3.5 animate-spin text-primary-600 dark:text-primary-400" />
-            </div>
-            <div className="p-3 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-2xl rounded-bl-none border border-gray-100 dark:border-gray-700/50 text-xs flex items-center gap-1.5 shadow-sm">
-              <span className="w-1.5 h-1.5 bg-gray-450 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-gray-450 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-gray-450 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      {/* Chat Messages Feed */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-50/30 dark:bg-slate-950/40">
+        
+        {/* Suggested Quick Prompts (only when 1 message) */}
+        {chatMessages.length <= 1 && (
+          <div className="mb-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Suggested Queries:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_PROMPTS.map((prompt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSendMessage(prompt)}
+                  className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+                >
+                  {prompt}
+                </button>
+              ))}
             </div>
           </div>
         )}
+
+        {/* Message Bubbles */}
+        {chatMessages.map((msg, index) => {
+          const isUser = msg.sender === 'user'
+          const timeStr = formatTime(msg.timestamp)
+          const isLiked = feedbackState[index] === 'liked'
+          const isDisliked = feedbackState[index] === 'disliked'
+
+          return (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn("flex gap-2.5 items-start group", isUser ? "flex-row-reverse" : "flex-row")}
+            >
+              {/* Avatar */}
+              <div
+                className={cn(
+                  "w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-extrabold shrink-0 border select-none",
+                  isUser
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-slate-800 text-white border-slate-700"
+                )}
+              >
+                {isUser ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5 text-emerald-400" />}
+              </div>
+
+              {/* Bubble content */}
+              <div className={cn("flex flex-col max-w-[84%]", isUser ? "items-end" : "items-start")}>
+                <div
+                  className={cn(
+                    "px-3.5 py-2.5 rounded-2xl shadow-2xs border text-xs md:text-sm",
+                    isUser
+                      ? "bg-emerald-600 text-white border-emerald-600 rounded-tr-xs"
+                      : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700 rounded-tl-xs"
+                  )}
+                >
+                  {parseMarkdown(msg.text)}
+                </div>
+
+                {/* Footer specs */}
+                <div className={cn("flex items-center gap-2 mt-1 px-1 text-[9.5px] text-slate-400 dark:text-slate-500", isUser ? "flex-row-reverse" : "flex-row")}>
+                  {timeStr && <span>{timeStr}</span>}
+
+                  {!isUser && (
+                    <div className="flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded-md border border-slate-200/40 dark:border-slate-700/40">
+                      <button
+                        onClick={() => handleCopyMessage(msg.text, index)}
+                        className="p-0.5 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                        title="Copy"
+                      >
+                        {copiedId === index ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                      </button>
+
+                      <button
+                        onClick={() => handleFeedback(index, 'liked')}
+                        className={cn("p-0.5 transition-colors cursor-pointer", isLiked ? "text-emerald-500" : "hover:text-emerald-500")}
+                        title="Like"
+                      >
+                        <ThumbsUp className={cn("w-3 h-3", isLiked && "fill-emerald-500")} />
+                      </button>
+
+                      <button
+                        onClick={() => handleFeedback(index, 'disliked')}
+                        className={cn("p-0.5 transition-colors cursor-pointer", isDisliked ? "text-red-500" : "hover:text-red-500")}
+                        title="Dislike"
+                      >
+                        <ThumbsDown className={cn("w-3 h-3", isDisliked && "fill-red-500")} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )
+        })}
+
+        {/* Thinking indicator */}
+        {chatIsTyping && (
+          <div className="flex gap-2.5 items-start">
+            <div className="w-7 h-7 rounded-lg bg-slate-800 text-white border border-slate-700 flex items-center justify-center shrink-0">
+              <Bot className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+            </div>
+            <div className="px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-xs flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+              <span>AI is thinking...</span>
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={chatEndRef} />
       </div>
 
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 max-w-full scrollbar-none">
-        {[
-          { label: 'Symptom Checker', query: 'Symptom Checker: I have a high fever', icon: Activity, color: 'hover:text-amber-500 hover:border-amber-300 dark:hover:border-amber-900/50' },
-          { label: 'Medicine Info', query: 'Tell me about Paracetamol', icon: Pill, color: 'hover:text-blue-500 hover:border-blue-300 dark:hover:border-blue-900/50' },
-          { label: 'Nearest PHCs', query: 'Recommend a nearby PHC center', icon: Building2, color: 'hover:text-emerald-500 hover:border-emerald-300 dark:hover:border-emerald-900/50' },
-          { label: 'Get Health Tip', query: 'Give me a daily health tip', icon: HelpCircle, color: 'hover:text-indigo-500 hover:border-indigo-300 dark:hover:border-indigo-900/50' }
-        ].map((tag, idx) => (
+      {/* Input Box Footer */}
+      <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
+        <div className="relative flex items-end bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-1.5 transition-all focus-within:ring-2 focus-within:ring-emerald-500/40">
+          
           <button
-            key={idx}
-            type="button"
-            onClick={() => handleSendChatMessage(tag.query)}
-            className={cn(
-              "px-3.5 py-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700/40 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full border border-gray-150/50 dark:border-gray-700/30 text-[10px] font-bold tracking-wide shrink-0 transition-all cursor-pointer flex items-center gap-1 active:scale-95",
-              tag.color
-            )}
+            onClick={() => toast('File attachment coming soon')}
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg transition-colors cursor-pointer shrink-0 mb-0.5"
+            title="Attach File"
           >
-            <tag.icon className="w-3 h-3" />
-            {tag.label}
+            <Paperclip className="w-3.5 h-3.5" />
           </button>
-        ))}
+
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            value={chatInput}
+            disabled={chatIsTyping}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={chatIsTyping ? "AI is thinking..." : "Ask anything about your health..."}
+            className="flex-1 px-2 py-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none text-xs resize-none max-h-28 font-medium opacity-100"
+          />
+
+          <div className="flex items-center gap-1 shrink-0 mb-0.5">
+            <button
+              onClick={handleToggleVoice}
+              className={cn(
+                "p-1.5 rounded-lg transition-all cursor-pointer",
+                isVoiceRecording ? "bg-red-500 text-white animate-pulse" : "text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              )}
+              title="Voice Input"
+            >
+              <Mic className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => handleSendMessage()}
+              disabled={!chatInput.trim() || chatIsTyping}
+              className={cn(
+                "p-1.5 rounded-lg transition-all cursor-pointer active:scale-95",
+                chatInput.trim() && !chatIsTyping
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                  : "bg-slate-300 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
+              )}
+              title="Send"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center px-1 mt-1 text-[9px] text-slate-400 dark:text-slate-500 font-medium select-none">
+          <span>Press Enter to send</span>
+          <span>{chatInput.length} / 2000</span>
+        </div>
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          handleSendChatMessage()
-        }}
-        className="flex gap-2.5"
-      >
-        <input
-          type="text"
-          placeholder="Ask about symptoms, medicines, or center recommendations..."
-          value={chatInput}
-          onChange={(e) => setChatInput(e.target.value)}
-          disabled={chatIsTyping}
-          className="flex-1 input-field py-3.5 rounded-xl border border-gray-200 dark:border-gray-750 bg-white dark:bg-gray-800 text-xs shadow-inner focus:border-primary-500 outline-none transition-all disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={chatIsTyping || !chatInput.trim()}
-          className="px-5 py-3.5 bg-primary-600 hover:bg-primary-750 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-primary-500/10 active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Send className="w-3.5 h-3.5" />
-          Send
-        </button>
-      </form>
     </div>
   )
 }
