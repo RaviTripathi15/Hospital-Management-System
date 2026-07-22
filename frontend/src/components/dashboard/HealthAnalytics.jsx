@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
-import { Heart, Activity, Percent, Scale, User, RefreshCw, Sparkles, Clock, Calendar, CheckCircle2 } from 'lucide-react'
+import { Heart, Activity, Percent, Scale, User, RefreshCw, Sparkles, Clock, Calendar, CheckCircle2, Info } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
 // Generate sample historical data with high fidelity matching current vitals
@@ -406,8 +406,8 @@ export default function HealthAnalytics({ vitals = {}, onUpdateClick }) {
       {/* Expanded Chart and Analytics Detail panels */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
-        {/* Vitals Trend Chart (Left/Center - spans lg:col-span-8) */}
-        <div className="lg:col-span-8 bg-white dark:bg-[#131c2e] p-6 rounded-xl border border-slate-100 dark:border-[#1e2d4a]/85 shadow-soft flex flex-col justify-between min-h-[380px]">
+        {/* Vitals Trend Chart (Left/Center - spans lg:col-span-7) */}
+        <div className="lg:col-span-7 bg-white dark:bg-[#131c2e] p-6 rounded-xl border border-slate-100 dark:border-[#1e2d4a]/85 shadow-soft flex flex-col justify-between min-h-[380px]">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-sm font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5">
@@ -475,28 +475,37 @@ export default function HealthAnalytics({ vitals = {}, onUpdateClick }) {
           </div>
         </div>
 
-        {/* AI Health Insights and Recent Checkups (Right - spans lg:col-span-4) */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
+        {/* AI Health Insights and Recent Checkups (Right - spans lg:col-span-5) */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
           
           {/* AI Insights Card */}
-          <div className="bg-white dark:bg-[#131c2e] p-6 rounded-xl border border-slate-100 dark:border-[#1e2d4a]/85 shadow-soft flex-1 relative overflow-hidden group">
+          <div className="bg-white dark:bg-[#131c2e] p-6 md:p-8 rounded-xl border border-slate-100 dark:border-[#1e2d4a]/85 shadow-soft h-auto min-h-[300px] relative overflow-hidden group flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/5 rounded-full blur-xl pointer-events-none" />
             
-            <div className="space-y-3">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-650 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wider rounded border border-indigo-250/20">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
-                AI Health Insights
-              </span>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-white">Clinical Assessment</h3>
-              <p className="text-xs text-slate-650 dark:text-slate-400 leading-relaxed font-medium">
-                {getAIInsightText()}
-              </p>
-            </div>
+            <div className="flex flex-col h-full justify-between gap-4">
+              <div>
+                <div className="mb-4">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-650 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider rounded border border-indigo-250/20">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+                    AI Health Insights
+                  </span>
+                </div>
+                <h3 className="text-base md:text-lg font-extrabold tracking-tight text-slate-800 dark:text-white mb-2">
+                  Clinical Assessment
+                </h3>
+                <p className="text-sm text-slate-650 dark:text-slate-400 leading-relaxed font-medium">
+                  {getAIInsightText()}
+                </p>
+              </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-50 dark:border-[#1e2d4a]/30">
-              <p className="text-[10px] text-slate-400 italic">
-                *Note: AI Insights are generated automatically for assistance. Consult your primary healthcare doctor for formal diagnostic opinions.
-              </p>
+              <div className="mt-4 p-4 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] leading-relaxed text-indigo-900 dark:text-indigo-300">
+                    <span className="font-bold">Medical Disclaimer:</span> AI Insights are generated automatically for assistance. Consult your primary healthcare doctor for formal diagnostic opinions.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Calendar, FileText, Building2, Bell, Pill, Activity, Plus, PhoneCall,
   Heart, Download, User, ArrowRight, ClipboardList, Info, HelpCircle,
-  Sparkles, Clock, ArrowUp
+  Sparkles, Clock, ArrowUp, X
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
