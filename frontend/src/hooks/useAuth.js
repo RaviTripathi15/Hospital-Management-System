@@ -21,6 +21,17 @@ export function useAuth() {
     [storeLogin, t]
   )
 
+  const googleLogin = useCallback(
+    async (idToken) => {
+      const data = await authService.googleLogin(idToken)
+      const { user: userData, accessToken, refreshToken } = data.data || data
+      storeLogin(userData, accessToken, refreshToken, true)
+      toast.success(t('auth.loginSuccess'))
+      return userData
+    },
+    [storeLogin, t]
+  )
+
   const logout = useCallback(async () => {
     await authService.logout()
     storeLogout()
@@ -44,6 +55,7 @@ export function useAuth() {
     token,
     isAuthenticated,
     login,
+    googleLogin,
     logout,
     updateUser,
     refreshUser,

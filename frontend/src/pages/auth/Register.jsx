@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { useAuth } from '@/hooks/useAuth'
 import authService from '@/services/authService'
 import { registerSchema } from '@/utils/validators'
 import { Eye, EyeOff, User, Mail, Lock, Key, Phone, Loader2 } from 'lucide-react'
@@ -14,6 +15,7 @@ export default function Register() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const storeLogin = useAuthStore((state) => state.login)
+  const { googleLogin } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isStaff, setIsStaff] = useState(false)
@@ -35,6 +37,39 @@ export default function Register() {
       centerCode: '',
     },
   })
+
+  useEffect(() => {
+    /* global google */
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          setIsLoading(true)
+          try {
+            await googleLogin(response.credential)
+            navigate('/dashboard')
+          } catch (err) {
+            console.error(err)
+            const errorMsg = err.response?.data?.message || 'Google authentication failed'
+            toast.error(errorMsg)
+          } finally {
+            setIsLoading(false)
+          }
+        },
+      })
+
+      window.google.accounts.id.renderButton(
+        document.getElementById('google-signin-btn'),
+        {
+          theme: 'outline',
+          size: 'large',
+          width: '350',
+          text: 'continue_with',
+          shape: 'rectangular',
+        }
+      )
+    }
+  }, [googleLogin, navigate])
 
   const handleRoleToggle = (checked) => {
     setIsStaff(checked)
@@ -79,6 +114,18 @@ export default function Register() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Create your personalized health account
         </p>
+      </div>
+
+      <div className="space-y-4">
+        <div id="google-signin-btn" className="w-full flex justify-center"></div>
+        
+        <div className="relative flex py-2 items-center">
+          <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+          <span className="flex-shrink mx-4 text-gray-400 text-xs uppercase tracking-wider font-semibold">
+            OR
+          </span>
+          <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

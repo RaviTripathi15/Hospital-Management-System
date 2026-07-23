@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 
 export default function Login() {
   const { t } = useTranslation()
-  const { login } = useAuth()
+  const { login, googleLogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
@@ -33,6 +33,39 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(
     !!localStorage.getItem('remember_email')
   )
+
+  useEffect(() => {
+    /* global google */
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          setIsLoading(true)
+          try {
+            await googleLogin(response.credential)
+            navigate(from, { replace: true })
+          } catch (err) {
+            console.error(err)
+            const errorMsg = err.response?.data?.message || 'Google authentication failed'
+            toast.error(errorMsg)
+          } finally {
+            setIsLoading(false)
+          }
+        },
+      })
+
+      window.google.accounts.id.renderButton(
+        document.getElementById('google-signin-btn'),
+        {
+          theme: 'outline',
+          size: 'large',
+          width: '350',
+          text: 'continue_with',
+          shape: 'rectangular',
+        }
+      )
+    }
+  }, [googleLogin, navigate, from])
 
   const onSubmit = async (data) => {
     setIsLoading(true)
@@ -62,6 +95,18 @@ export default function Login() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Access your secure healthcare workspace
         </p>
+      </div>
+
+      <div className="space-y-4">
+        <div id="google-signin-btn" className="w-full flex justify-center"></div>
+        
+        <div className="relative flex py-2 items-center">
+          <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+          <span className="flex-shrink mx-4 text-gray-400 text-xs uppercase tracking-wider font-semibold">
+            OR
+          </span>
+          <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

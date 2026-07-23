@@ -6,6 +6,7 @@ const router = express.Router();
 const {
   register, login, logout, getMe, updateProfile,
   changePassword, forgotPassword, resetPassword, refreshToken,
+  googleLogin,
 } = require('../controllers/authController');
 
 const { protect } = require('../middleware/auth');
@@ -18,6 +19,7 @@ const { uploadProfilePic } = require('../middleware/upload');
 // Public routes
 router.post('/register', authLimiter, registerValidator, register);
 router.post('/login', authLimiter, loginValidator, login);
+router.post('/google', googleLogin);
 router.post('/forgot-password', passwordResetLimiter, forgotPasswordValidator, forgotPassword);
 router.put('/reset-password/:token', passwordResetLimiter, resetPassword);
 router.post('/refresh-token', refreshToken);

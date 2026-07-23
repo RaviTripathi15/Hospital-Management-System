@@ -2,12 +2,15 @@
 
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { success, error: apiError } = require('../utils/apiResponse');
 const { sendEmail } = require('../services/emailService');
 const logger = require('../config/logger');
 const { HTTP } = require('../config/constants');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const sendTokenResponse = (user, statusCode, res) => {
@@ -77,6 +80,81 @@ exports.login = asyncHandler(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   logger.info(`User logged in: ${user.email}`);
+  sendTokenResponse(user, HTTP.OK, res);
+});
+
+// ─── @route POST /api/v1/auth/google ─────────────────────────────────────────
+exports.googleLogin = asyncHandler(async (req, res, next) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return next(new AppError('No Google ID token provided.', HTTP.BAD_REQUEST));
+  }
+
+  let payload;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (err) {
+    logger.error(`Google token verification failed: ${err.message}`);
+    return next(new AppError('Invalid Google token.', HTTP.UNAUTHORIZED));
+  }
+
+  const { sub: googleId, email, name, picture } = payload;
+
+  if (!email) {
+    return next(new AppError('Google account does not provide an email.', HTTP.BAD_REQUEST));
+  }
+
+  // 1. Try to find the user by googleId
+  let user = await User.findOne({ googleId });
+
+  if (!user) {
+    // 2. Try to find the user by email
+    user = await User.findOne({ email: email.toLowerCase() });
+
+    if (user) {
+      // 3. User exists with this email, link the Google account
+      user.googleId = googleId;
+      user.authProvider = 'google';
+      if (!user.profilePic && picture) {
+        user.profilePic = picture;
+      }
+      user.lastLogin = new Date();
+      await user.save({ validateBeforeSave: false });
+      logger.info(`Linked existing email/password account for: ${email}`);
+    } else {
+      // 4. User does not exist, create a new Google-authenticated user
+      const randomPassword = crypto.randomBytes(16).toString('hex') + 'A1!';
+      user = await User.create({
+        name,
+        email: email.toLowerCase(),
+        googleId,
+        authProvider: 'google',
+        password: randomPassword,
+        profilePic: picture || null,
+        role: 'citizen',
+        isActive: true,
+      });
+      logger.info(`Created new Google user account for: ${email}`);
+    }
+  } else {
+    // User already has this Google ID linked. Update lastLogin and profile pic if needed.
+    user.lastLogin = new Date();
+    if (picture && user.profilePic !== picture && !user.profilePic?.startsWith('/uploads/')) {
+      user.profilePic = picture;
+    }
+    await user.save({ validateBeforeSave: false });
+    logger.info(`Logged in Google user: ${email}`);
+  }
+
+  if (!user.isActive) {
+    return next(new AppError('Account deactivated. Contact support.', HTTP.FORBIDDEN));
+  }
+
   sendTokenResponse(user, HTTP.OK, res);
 });
 
