@@ -3,12 +3,21 @@
 // ─── Load environment variables first, before anything else ─────────────────
 require('dotenv').config();
 
-// ─── Startup validation: Verify MONGO_URI exists ─────────────────────────────
+// ─── Startup validation: Verify MONGO_URI and GOOGLE_CLIENT_ID exist ─────────
 if (!process.env.MONGO_URI) {
   console.error('\n================================================================');
   console.error('❌ CRITICAL STARTUP ERROR: MONGO_URI is not defined.');
   console.error('   Please define MONGO_URI in your environment variables.');
   console.error('   The server will not start without a valid MongoDB URI.');
+  console.error('================================================================\n');
+  process.exit(1);
+}
+
+if (process.env.NODE_ENV !== 'test' && !process.env.GOOGLE_CLIENT_ID) {
+  console.error('\n================================================================');
+  console.error('❌ CRITICAL STARTUP ERROR: GOOGLE_CLIENT_ID is not defined.');
+  console.error('   Please define GOOGLE_CLIENT_ID in your environment variables.');
+  console.error('   The server will not start without a Google Client ID.');
   console.error('================================================================\n');
   process.exit(1);
 }

@@ -31,6 +31,9 @@ services:
         placeholder: "Your Google Gemini API Key"
       - key: GEMINI_MODEL
         value: gemini-1.5-flash
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+        placeholder: "Your Google OAuth Client ID"
 
 
   # Frontend static site
@@ -55,3 +58,6 @@ services:
       - key: VITE_SOCKET_URL
         sync: false
         placeholder: "Your backend URL (e.g. https://hospital-management-backend.onrender.com)"
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+        placeholder: "Your Google OAuth Client ID (must match backend)"
