@@ -16,9 +16,6 @@ services:
       - key: MONGO_URI
         sync: false
         placeholder: "Your MongoDB Atlas connection string"
-      - key: MONGO_URI_PROD
-        sync: false
-        placeholder: "Your MongoDB Atlas production connection string (can be same as MONGO_URI)"
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

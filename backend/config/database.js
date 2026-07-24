@@ -9,13 +9,10 @@ const RETRY_INTERVAL_MS = 5000;
 let retryCount = 0;
 
 const connectDB = async () => {
-  const uri =
-    process.env.NODE_ENV === 'production'
-      ? (process.env.MONGO_URI_PROD || process.env.MONGO_URI)
-      : process.env.MONGO_URI;
+  const uri = process.env.MONGO_URI;
 
   if (!uri) {
-    throw new Error('MongoDB URI is not defined in environment variables.');
+    throw new Error('MONGO_URI is not defined in environment variables.');
   }
 
   const options = {

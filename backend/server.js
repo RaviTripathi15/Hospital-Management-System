@@ -3,6 +3,16 @@
 // ─── Load environment variables first, before anything else ─────────────────
 require('dotenv').config();
 
+// ─── Startup validation: Verify MONGO_URI exists ─────────────────────────────
+if (!process.env.MONGO_URI) {
+  console.error('\n================================================================');
+  console.error('❌ CRITICAL STARTUP ERROR: MONGO_URI is not defined.');
+  console.error('   Please define MONGO_URI in your environment variables.');
+  console.error('   The server will not start without a valid MongoDB URI.');
+  console.error('================================================================\n');
+  process.exit(1);
+}
+
 // ─── Set Google DNS to reliably resolve MongoDB Atlas hostnames in local dev ──
 if (process.env.NODE_ENV !== 'production') {
   const dns = require('dns');
@@ -273,7 +283,7 @@ app.use(errorHandler);
 
 // ─── Server Bootstrap ─────────────────────────────────────────────────────────
 // Render injects PORT automatically; always bind to 0.0.0.0 (not 127.0.0.1)
-const PORT = parseInt(process.env.PORT, 10) || 5000;
+const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
