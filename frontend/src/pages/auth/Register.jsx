@@ -15,7 +15,7 @@ export default function Register() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const storeLogin = useAuthStore((state) => state.login)
-  const { googleLogin } = useAuth()
+  const { googleLogin, isAuthenticated } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isStaff, setIsStaff] = useState(false)
@@ -37,6 +37,12 @@ export default function Register() {
       centerCode: '',
     },
   })
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   useEffect(() => {
     /* global google */

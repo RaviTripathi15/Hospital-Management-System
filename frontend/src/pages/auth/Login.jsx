@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 
 export default function Login() {
   const { t } = useTranslation()
-  const { login, googleLogin } = useAuth()
+  const { login, googleLogin, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
@@ -33,6 +33,12 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(
     !!localStorage.getItem('remember_email')
   )
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true })
+    }
+  }, [isAuthenticated, navigate, from])
 
   useEffect(() => {
     /* global google */
