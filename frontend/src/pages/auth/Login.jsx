@@ -42,10 +42,16 @@ export default function Login() {
 
   useEffect(() => {
     /* global google */
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    if (!googleClientId) {
+      console.warn('VITE_GOOGLE_CLIENT_ID is not configured')
+      return
+    }
+
     const initGoogle = () => {
       if (window.google?.accounts?.id) {
         window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com',
+          client_id: googleClientId,
           callback: async (response) => {
             setIsLoading(true)
             try {
