@@ -17,6 +17,7 @@ export const useAuthStore = create(
       logout: () => {
         set({ user: null, token: null, refreshToken: null, isAuthenticated: false, rememberMe: false })
         localStorage.removeItem('auth-storage')
+        sessionStorage.removeItem('auth-storage')
       },
 
       updateUser: (userData) => {

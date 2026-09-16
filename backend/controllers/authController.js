@@ -130,7 +130,7 @@ exports.googleLogin = asyncHandler(async (req, res, next) => {
       // 4. User does not exist, create a new Google-authenticated user
       const randomPassword = crypto.randomBytes(16).toString('hex') + 'A1!';
       user = await User.create({
-        name,
+        name: name || email.split('@')[0],
         email: email.toLowerCase(),
         googleId,
         authProvider: 'google',
@@ -273,7 +273,7 @@ exports.resetPassword = asyncHandler(async (req, res, next) => {
 
 // ─── @route POST /api/v1/auth/refresh-token ──────────────────────────────────
 exports.refreshToken = asyncHandler(async (req, res, next) => {
-  const token = req.cookies.refreshToken || req.body.refreshToken;
+  const token = req.cookies?.refreshToken || req.body?.refreshToken;
   if (!token) {
     return next(new AppError('No refresh token provided.', HTTP.UNAUTHORIZED));
   }

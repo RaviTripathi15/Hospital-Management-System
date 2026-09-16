@@ -42,34 +42,52 @@ export default function Login() {
 
   useEffect(() => {
     /* global google */
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com',
-        callback: async (response) => {
-          setIsLoading(true)
-          try {
-            await googleLogin(response.credential)
-            navigate(from, { replace: true })
-          } catch (err) {
-            console.error(err)
-            const errorMsg = err.response?.data?.message || 'Google authentication failed'
-            toast.error(errorMsg)
-          } finally {
-            setIsLoading(false)
-          }
-        },
-      })
+    const initGoogle = () => {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com',
+          callback: async (response) => {
+            setIsLoading(true)
+            try {
+              await googleLogin(response.credential)
+              navigate(from, { replace: true })
+            } catch (err) {
+              console.error(err)
+              const errorMsg = err.response?.data?.message || 'Google authentication failed'
+              toast.error(errorMsg)
+            } finally {
+              setIsLoading(false)
+            }
+          },
+        })
 
-      window.google.accounts.id.renderButton(
-        document.getElementById('google-signin-btn'),
-        {
-          theme: 'outline',
-          size: 'large',
-          width: '350',
-          text: 'continue_with',
-          shape: 'rectangular',
+        const btn = document.getElementById('google-signin-btn')
+        if (btn) {
+          btn.innerHTML = ''
+          window.google.accounts.id.renderButton(btn, {
+            theme: 'outline',
+            size: 'large',
+            width: '350',
+            text: 'continue_with',
+            shape: 'rectangular',
+          })
         }
-      )
+        return true
+      }
+      return false
+    }
+
+    if (!initGoogle()) {
+      const interval = setInterval(() => {
+        if (initGoogle()) {
+          clearInterval(interval)
+        }
+      }, 200)
+      const timeout = setTimeout(() => clearInterval(interval), 10000)
+      return () => {
+        clearInterval(interval)
+        clearTimeout(timeout)
+      }
     }
   }, [googleLogin, navigate, from])
 

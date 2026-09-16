@@ -98,8 +98,9 @@ api.interceptors.response.use(
           { refreshToken },
           { withCredentials: true }
         )
-        const { token: newToken } =
-          refreshResponse.data?.data || refreshResponse.data
+        const responseData =
+          refreshResponse.data?.data || refreshResponse.data || {}
+        const newToken = responseData.accessToken || responseData.token
 
         useAuthStore.getState().setToken(newToken)
         processQueue(null, newToken)

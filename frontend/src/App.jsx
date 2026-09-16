@@ -129,16 +129,14 @@ export default function App() {
 
   useEffect(() => {
     const checkSession = async () => {
-      if (isAuthenticated && token) {
+      const state = useAuthStore.getState()
+      if (state.isAuthenticated && state.token) {
         try {
-          // Call me profile API endpoint to verify token validity
           const data = await authService.getMe()
           const userData = data.data || data
           updateUser(userData)
         } catch (err) {
           console.error("Automatic session verification failed. Retrying refresh...", err)
-          // If token refresh fails, the axios interceptor forces logout.
-          // Check if session became invalid.
           if (!useAuthStore.getState().isAuthenticated) {
             logout()
           }
@@ -147,8 +145,15 @@ export default function App() {
       setIsCheckingAuth(false)
     }
 
-    checkSession()
-  }, [])
+    if (useAuthStore.persist?.hasHydrated?.() ?? true) {
+      checkSession()
+    } else {
+      const unsub = useAuthStore.persist?.onFinishHydration?.(() => {
+        checkSession()
+      })
+      return () => unsub?.()
+    }
+  }, [updateUser, logout])
 
   if (isCheckingAuth) {
     return <FullPageLoader />
