@@ -141,8 +141,15 @@ exports.createChat = asyncHandler(async (req, res, next) => {
 
   if (message) {
     chat.messages.push({ sender: 'user', text: message });
-    const aiResponse = await aiService.chatWithAI(message, [], req.user);
-    chat.messages.push({ sender: 'ai', text: aiResponse.reply });
+    try {
+      const aiResponse = await aiService.chatWithAI(message, [], req.user);
+      chat.messages.push({ sender: 'ai', text: aiResponse.reply });
+    } catch (aiErr) {
+      chat.messages.push({
+        sender: 'ai',
+        text: 'I received your message, but the AI service is temporarily unavailable. Please try again shortly.'
+      });
+    }
   }
 
   await chat.save();
@@ -195,11 +202,19 @@ exports.addChatMessage = asyncHandler(async (req, res, next) => {
     text: msg.text
   }));
 
-  // Generate response
-  const aiResponse = await aiService.chatWithAI(message, history, req.user);
+  // Generate response with error recovery
+  let aiReply = 'I received your message, but the AI service is temporarily unavailable. Please try again shortly.';
+  let timestamp = new Date().toISOString();
+  try {
+    const aiResponse = await aiService.chatWithAI(message, history, req.user);
+    aiReply = aiResponse.reply;
+    timestamp = aiResponse.timestamp || timestamp;
+  } catch (aiErr) {
+    // Keep fallback message
+  }
 
   // Add AI response
-  chat.messages.push({ sender: 'ai', text: aiResponse.reply });
+  chat.messages.push({ sender: 'ai', text: aiReply });
 
   // Auto rename if needed
   if (chat.title === 'New Conversation' && chat.messages.length <= 2) {
@@ -211,7 +226,7 @@ exports.addChatMessage = asyncHandler(async (req, res, next) => {
 
   return res.status(HTTP.OK).json(success({
     chat,
-    reply: aiResponse.reply,
-    timestamp: aiResponse.timestamp
+    reply: aiReply,
+    timestamp
   }, 'Message sent and reply generated.'));
 });

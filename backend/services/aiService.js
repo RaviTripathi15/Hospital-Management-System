@@ -608,8 +608,12 @@ const chatWithAI = async (message, history = [], user = null) => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    logger.error('GEMINI_API_KEY is not defined in the backend environment.');
-    throw new AppError('AI Health Assistant is not configured. Please define GEMINI_API_KEY in environment variables.', HTTP.SERVER_ERROR);
+    logger.warn('GEMINI_API_KEY is not defined in backend environment. Providing built-in health assistant response.');
+    return {
+      reply: "Hello! I am your AI Health Assistant. I can assist you with general health questions, nutrition, preventive care, and finding nearby Primary Health Centers (PHCs). To enable full AI chat capabilities with Google Gemini, please configure GEMINI_API_KEY in your backend .env file.",
+      source: 'offline-fallback',
+      timestamp: new Date().toISOString()
+    };
   }
 
   // 1. System instruction based on requirements

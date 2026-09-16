@@ -44,6 +44,8 @@ export default function Register() {
     }
   }, [isAuthenticated, navigate])
 
+  const googleInitializedRef = React.useRef(false)
+
   useEffect(() => {
     /* global google */
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -53,7 +55,8 @@ export default function Register() {
     }
 
     const initGoogle = () => {
-      if (window.google?.accounts?.id) {
+      if (window.google?.accounts?.id && !googleInitializedRef.current) {
+        googleInitializedRef.current = true
         window.google.accounts.id.initialize({
           client_id: googleClientId,
           callback: async (response) => {
@@ -84,7 +87,7 @@ export default function Register() {
         }
         return true
       }
-      return false
+      return googleInitializedRef.current
     }
 
     if (!initGoogle()) {

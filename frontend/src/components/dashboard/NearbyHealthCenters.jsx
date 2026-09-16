@@ -149,7 +149,7 @@ export default function NearbyHealthCenters({ centers = [] }) {
 
       {/* Cards List Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {filteredCenters.length === 0 ? (
             <motion.div
               key="empty"

@@ -229,7 +229,7 @@ export default function MedicineReminder({ prescriptions = [] }) {
 
             {/* Active Medicine List */}
             <div className="space-y-2.5 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 {activeMeds.list.length === 0 ? (
                   <motion.div
                     key="empty-tab"
